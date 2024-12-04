@@ -1,4 +1,4 @@
-package Test;
+package tests;
 import ChessGame.ChessBoard;
 
 import org.junit.jupiter.api.*;
