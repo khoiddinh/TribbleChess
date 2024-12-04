@@ -77,6 +77,8 @@ public class MoveGenerationPrecompute {
             blackPawnMoveMasks[i] = generateBlackPawnMoveMask(i);
         }
 
+        RAYS = generateRays();
+        
         rookAttackMasks = new long[64];
         for (int i = 0; i < 64; i++) {
             rookAttackMasks[i] = generateRookAttackMask(i);
@@ -92,7 +94,6 @@ public class MoveGenerationPrecompute {
             queenAttackMasks[i] = generateQueenAttackMask(i);
         }
 
-        RAYS = generateRays();
     }
 
     private static int getPosOfLeastSigBit(long n) {

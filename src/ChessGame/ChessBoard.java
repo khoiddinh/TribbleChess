@@ -1,6 +1,7 @@
 package ChessGame;
 
 import java.lang.reflect.Array;
+import java.util.Stack;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -38,8 +39,8 @@ public class ChessBoard {
 
     private static final MoveGenerationPrecompute precompute = new MoveGenerationPrecompute();
 
-    // TODO: figure out move representation
-    private LinkedList<Integer> moveStack;
+    private Stack<Integer> moveStack;
+
     public ChessBoard() {
 
         // DEFAULT BOARD POSITION
@@ -147,7 +148,8 @@ public class ChessBoard {
     }
 
     // note: castle source and target follow the king
-    // 4 bits
+    // note: enPassant source and target follow the capturing pawn
+    // TODO: UNIT TESTS
     public int encodeMove(int source, int target, int piece,
                           boolean capture, int pieceCaptured, boolean promotion,
                           int promotionPiece, boolean castleMove,
@@ -166,6 +168,7 @@ public class ChessBoard {
         encodedMove |= (enPassant ? 1 : 0) << 29;
         return encodedMove;
     }
+
     // gets binary trace of piece attacks
     // NOTE: doesn't handle enPassant, castle, or promotion
     private long getTraceOfPiece(int pos, int piece, long friendlyBitBoard, long opponentBitBoard) {
@@ -174,7 +177,6 @@ public class ChessBoard {
         switch (piece) {
             case 0: // king
                 moveMask = kingAttackMasks[pos];
-                // TODO: handle castling
                 break;
             case 1: // queen
                 moveMask = getSlidingAttackWithBlockers(
@@ -204,7 +206,9 @@ public class ChessBoard {
         moveMask ^= (moveMask & friendlyBitBoard);
         return moveMask;
     }
+
     // TODO: speedup -> make isCastleSquareAttackedFunction
+    // TODO: UNIT TESTS
     private boolean isSquareAttacked(int pos, long friendly, long opponentBitBoard) {
         long blockerBitBoard = friendly | opponentBitBoard;
         // array of mask of how each piece could attack pos
@@ -251,6 +255,12 @@ public class ChessBoard {
         return encodedState;
     }
 
+    // gets if king is currently in check (includes but doesn't distinguish mate)
+    private boolean isKingInCheck(long kingBitBoard, long friendlyBitBoard, long opponentBitBoard) {
+        int kingPos = getPosOfLeastSigBit(kingBitBoard);
+        return isSquareAttacked(kingPos, friendlyBitBoard, opponentBitBoard);
+    }
+
     private int findPieceAtPos(int pos, boolean findWhitePiece) {
         long[] bitBoardList = findWhitePiece ? whiteBitBoards : blackBitBoards;
         long posMask = startingBitBoards[pos];
@@ -261,6 +271,21 @@ public class ChessBoard {
         }
         throw new IllegalArgumentException("No piece at Pos");
     }
+
+    // TODO: TEST
+    private ArrayList<Integer> filterLegalMoves(ArrayList<Integer> moves, long friendlyBitBoard, long opponentBitBoard) {
+        long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
+        ArrayList<Integer> legalMoves = new ArrayList<>();
+        for (int move : moves) {
+            makeMove(move);
+            if (!isKingInCheck(bitBoardList[0], friendlyBitBoard, opponentBitBoard)) { // legal
+                legalMoves.add(move);
+            }
+            undoLastMove();
+        }
+        return legalMoves;
+    }
+
     // move encoding (in top bottom order of most sig to least sig digit):
     // 1 bit enPassant (1: enPassant, 0: no enPassant) IF enPASSANT, CAPTURE FLAG TRUE
     // 4 bits: PREVIOUS castle state (what was the castle state BEFORE playing this move)
@@ -275,7 +300,7 @@ public class ChessBoard {
     // 6 bits: target square
     // 6 bits: source square
     // NOTE: FOR NOW, MOVE STORES CASTLE STATE BEFORE MOVE FOR UNDO
-    public ArrayList<Integer> getPossibleMoves() {
+    public ArrayList<Integer> getLegalPossibleMoves() {
         long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
 
         long opposingBitBoard = orBitBoardArray(
@@ -294,7 +319,6 @@ public class ChessBoard {
                 long moveMask = getTraceOfPiece(pos, piece, friendlyBitBoard, opposingBitBoard);
 
                 // CHECK AND ADD SPECIAL MOVES
-                // TODO: ADD XRAY CASE (PIN), AND CHECK CASE AND CHECKMATE CASE
                 // add king castling
                 if (piece == 0) {
                     // check if white can right castle
@@ -354,8 +378,6 @@ public class ChessBoard {
                 // handle pawn enPassant ONLY
                 if (piece == 5) {
                     // TODO: add enPassant flag
-                    // handle promotion
-                    // TODO: handle captures promotion vs move promotion
                     String s = "";
                 }
 
@@ -398,34 +420,152 @@ public class ChessBoard {
                         }
                     }
 
-                    // if promotion, queen added by default, block above adds rest
-                    int move = encodeMove(pos, targetPos, piece,
-                            isCaptureMove, capturedPiece,
-                            isPromotion, 0,
-                            false, 0,
-                            encodeCastleState(), false);
-                    possibleMoves.add(move);
+                    // king can't move into check functionality
+                    if (!(piece == 0 && isSquareAttacked(targetPos, friendlyBitBoard, opposingBitBoard))) {
+                        // if promotion, queen added by default, block above adds rest
+                        int move = encodeMove(pos, targetPos, piece,
+                                isCaptureMove, capturedPiece,
+                                isPromotion, 0,
+                                false, 0,
+                                encodeCastleState(), false);
+                        possibleMoves.add(move);
+                    }
                     moveMask ^= startingBitBoards[targetPos]; // remove this move from move mask
                     // cont: (the moves that we still have to convert and encode)
                 }
                 pieceBitBoard ^= startingBitBoards[pos]; // remove piece from bitboard and process next
             }
         }
-        return possibleMoves;
+        return filterLegalMoves(possibleMoves, friendlyBitBoard, opposingBitBoard);
     }
 
     // plays move, updates bitboards, and switches turn
     // assumes valid move
     // TODO: handle castling rook move
-    public long makeMove(int move) {
+    // TODO: UNIT TESTS
+    public void makeMove(int move) {
         int source = move & 0b111111;
         int target = (move & (0b111111 << 6)) >>> 6;
-        boolean capture = ((move & (1 << 13)) >>> 13) == 1;
-        boolean promotion = ((move & (1 << 14)) >>> 14) == 1;
-        int promotionPiece = move & (11 << 16);
-        boolean castle = ((move & (1 << 17)) >>> 17) == 1;
-        int castleDirection = move & (1 << 18);
-        boolean enpassant = ((move & (1 << 19)) >>> 19) == 1;
-        return 0;
+        int piece = (move & (0b111 << 15)) >>> 15;
+        boolean capture = ((move & (1 << 16)) >>> 16) == 1;
+        int pieceCaptured = (move & (0b111 << 19)) >>> 19;
+        boolean promotion = ((move & (1 << 20)) >>> 20) == 1;
+        int promotionPiece = (move & (0b11 << 22)) >>> 22;
+        boolean castleMove = ((move & (1 << 23)) >>> 23) == 1;
+        int castleDirection = (move & (1 << 24)) >>> 24;
+        int castleState = (move & (0b1111 << 28)) >>> 28; // previous state before move
+        boolean enPassant = ((move & (1 << 29)) >>> 29) == 1;
+
+        long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
+        long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
+        // remove piece at source location
+        bitBoardList[piece] ^= startingBitBoards[source];
+        // add at new target location
+        bitBoardList[piece] |= startingBitBoards[target];
+        // if capture move, update the capture bitboard in opponent bitboard
+        if (capture) {
+            opponentBitBoardList[pieceCaptured] ^= startingBitBoards[target]; // remove captured piece
+        }
+        // if promotion, replace the pawn (that we already moved) with the promoted piece
+        if (promotion) {
+            bitBoardList[piece] ^= startingBitBoards[target]; // remove pawn
+            bitBoardList[promotionPiece] |= startingBitBoards[target]; // replace with promoted piece
+        }
+        // if castleMove, move the rook since we already moved the king above
+        if (castleMove) {
+            switch (castleDirection) {
+                case 0: // right castle
+                    bitBoardList[2] ^= startingBitBoards[isWhiteTurn ? 63 : 7];
+                    bitBoardList[2] |= startingBitBoards[isWhiteTurn ? 61 : 5];
+                    break;
+                case 1: // left castle
+                    bitBoardList[2] ^= startingBitBoards[isWhiteTurn ? 56 : 0];
+                    bitBoardList[2] |= startingBitBoards[isWhiteTurn ? 59 : 3];
+            }
+            // update the castle fields
+            if (isWhiteTurn) {
+                whiteCanLeftCastle = false;
+                whiteCanRightCastle = false;
+            } else { // black
+                blackCanLeftCastle = false;
+                blackCanRightCastle = false;
+            }
+        }
+        // TODO: if this move changes castle state, update the field here
+
+        // Do nothing with castle state, this is solely for undoMove function
+
+        // already updated friendly pawn's location above, just remove enemy pawn
+        if (enPassant) {
+            // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
+            opponentBitBoardList[5] ^= startingBitBoards[isWhiteTurn ? target + 8 : target - 8];
+        }
+
+        // add move to moveStack
+        moveStack.add(move);
+
+        // switch turn
+        switchTurn();
+    }
+
+    public void undoLastMove() {
+        int move = moveStack.pop();
+        int source = move & 0b111111;
+        int target = (move & (0b111111 << 6)) >>> 6;
+        int piece = (move & (0b111 << 15)) >>> 15;
+        boolean capture = ((move & (1 << 16)) >>> 16) == 1;
+        int pieceCaptured = (move & (0b111 << 19)) >>> 19;
+        boolean promotion = ((move & (1 << 20)) >>> 20) == 1;
+        int promotionPiece = (move & (0b11 << 22)) >>> 22;
+        boolean castleMove = ((move & (1 << 23)) >>> 23) == 1;
+        int castleDirection = (move & (1 << 24)) >>> 24;
+        int castleState = (move & (0b1111 << 28)) >>> 28; // previous state before move
+        boolean enPassant = ((move & (1 << 29)) >>> 29) == 1;
+
+        long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
+        long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
+
+        // remove piece from target
+        bitBoardList[piece] ^= startingBitBoards[target];
+        // add it back to the original place
+        bitBoardList[piece] |= startingBitBoards[source];
+
+        // if captured, add the enemy piece back to its spot
+        if (capture) {
+            opponentBitBoardList[pieceCaptured] |= startingBitBoards[target];
+        }
+
+        // if promotion, remove promoted piece from target
+        if (promotion) {
+            bitBoardList[promotionPiece] ^= startingBitBoards[target];
+        }
+
+        // if castle, move rook back and fix castle fields
+        if (castleMove) {
+            switch (castleDirection) {
+                case 0: // right castle
+                    bitBoardList[2] ^= startingBitBoards[isWhiteTurn ? 61 : 5];
+                    bitBoardList[2] |= startingBitBoards[isWhiteTurn ? 63 : 7];
+                    break;
+                case 1: // left castle
+                    bitBoardList[2] ^= startingBitBoards[isWhiteTurn ? 59 : 3];
+                    bitBoardList[2] |= startingBitBoards[isWhiteTurn ? 56 : 0];
+            }
+
+            // fix the castle fields
+            blackCanLeftCastle = (castleState & 1) == 1;
+            blackCanRightCastle = (castleState & (1 << 1)) >>> 1 == 1;
+            whiteCanLeftCastle = (castleState & (1 << 2)) >>> 2 == 1;
+            whiteCanRightCastle = (castleState & (1 << 3)) >>> 3 == 1;
+        }
+
+        // put the captured pawn back, already moved capturing pawn back
+        if (enPassant) {
+            // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
+            opponentBitBoardList[5] |= startingBitBoards[isWhiteTurn ? target + 8 : target - 8];
+        }
+
+        // switch turn back
+        switchTurn();
     }
 }
