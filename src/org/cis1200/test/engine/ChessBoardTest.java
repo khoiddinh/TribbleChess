@@ -1,5 +1,5 @@
-package tests;
-import ChessGame.ChessBoard;
+package test.java.org.cis1200.engine;
+import main.java.org.cis1200.engine.ChessBoard;
 
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;

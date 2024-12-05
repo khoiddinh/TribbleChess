@@ -1,11 +1,9 @@
-package ChessGame;
+package org.cis1200.chess.engine;
 
-import java.lang.reflect.Array;
 import java.util.Stack;
 import java.util.ArrayList;
-import java.util.LinkedList;
 
-import static ChessGame.MoveGenerationPrecompute.*;
+import static org.cis1200.chess.engine.MoveGenerationPrecompute.*;
 
 public class ChessBoard {
 

@@ -1,4 +1,4 @@
-package ChessGame;
+package org.cis1200.chess.engine;
 
 public class MoveGenerationPrecompute {
 
@@ -78,7 +78,7 @@ public class MoveGenerationPrecompute {
         }
 
         RAYS = generateRays();
-        
+
         rookAttackMasks = new long[64];
         for (int i = 0; i < 64; i++) {
             rookAttackMasks[i] = generateRookAttackMask(i);

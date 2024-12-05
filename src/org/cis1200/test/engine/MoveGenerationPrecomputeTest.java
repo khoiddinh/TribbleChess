@@ -1,6 +1,6 @@
-package tests;
+package test.java.org.cis1200.engine;
 
-import ChessGame.MoveGenerationPrecompute;
+import main.java.org.cis1200.engine.MoveGenerationPrecompute;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
