@@ -9,7 +9,7 @@ import javax.swing.*;
     then the ChessBoard which abstracts it out to just the
     public facing getter methods
     ideally this will be stored in the 2d array form for ease of use
-    also iterfaces with move pairs instead of bitboards
+    also interfaces with move pairs instead of bitboards
     still stores the bitboards so it can make the moves with the engine
 */
 

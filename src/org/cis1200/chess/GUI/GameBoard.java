@@ -1,4 +1,4 @@
-package org.cis1200.tictactoe;
+package org.cis1200.chess.GUI;
 
 /*
  * CIS 120 HW09 - TicTacToe Demo
@@ -6,9 +6,21 @@ package org.cis1200.tictactoe;
  * Created by Bayley Tuch, Sabrina Green, and Nicolas Corona in Fall 2020.
  */
 
+import org.cis1200.chess.engine.ChessBoard;
+
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import javax.imageio.ImageIO;
 import javax.swing.*;
+
+import static org.cis1200.chess.engine.ChessBoard.EMPTY_SQUARE;
 
 /**
  * This class instantiates a TicTacToe object, which is the model for the game.
@@ -29,13 +41,27 @@ import javax.swing.*;
 @SuppressWarnings("serial")
 public class GameBoard extends JPanel {
 
-    private TicTacToe ttt; // model for the game
+    private ChessBoard board; // model for the game
     private JLabel status; // current status text
 
     // Game constants
-    public static final int BOARD_WIDTH = 300;
-    public static final int BOARD_HEIGHT = 300;
+    public static final int SQUARE_LENGTH = 60; // 100 pixels
+    public static final int BOARD_WIDTH = SQUARE_LENGTH*8; // 100 pixels per square
+    public static final int BOARD_HEIGHT = SQUARE_LENGTH*8;
 
+    public static final String WHITE_TO_MOVE_STATUS = "White to move";
+    public static final String BLACK_TO_MOVE_STATUS = "Black to move";
+
+    public static HashMap<Character, BufferedImage> PIECE_TO_IMAGE;
+
+    public static final Color coloredSquareColor = new Color(160,82,45);
+
+    private char[][] boardState;
+    private int[][] possibleNextMovePairs; // pairs for checking if valid
+    private ArrayList<Integer> possibleNextMoves; // to actually move
+    private int posSelected;
+
+    private ArrayList<Integer> moveList;
     /**
      * Initializes the game board.
      */
@@ -47,33 +73,118 @@ public class GameBoard extends JPanel {
         // keyboard focus, key events are handled by its key listener.
         setFocusable(true);
 
-        ttt = new TicTacToe(); // initializes model for the game
+        board = new ChessBoard(); // initializes model for the game
         status = statusInit; // initializes the status JLabel
+
+        PIECE_TO_IMAGE = new HashMap<>(); // init hash map
+
+        posSelected = -1; // init variable
+        boardState = board.getBoardArray(); // init variable
+        possibleNextMovePairs = board.getMovePairs(); // init variable
+        possibleNextMoves = board.getLegalPossibleMoves();
+        System.out.println(Arrays.deepToString(possibleNextMovePairs));
+
+        // DEBUG
+        moveList = new ArrayList<>();
+        // initialize PIECE_TO_IMAGE
+        try {
+            // white pieces
+            PIECE_TO_IMAGE.put('K', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_klt60.png")));
+            PIECE_TO_IMAGE.put('Q', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_qlt60.png")));
+            PIECE_TO_IMAGE.put('R', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_rlt60.png")));
+            PIECE_TO_IMAGE.put('B', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_blt60.png")));
+            PIECE_TO_IMAGE.put('N', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_nlt60.png")));
+            PIECE_TO_IMAGE.put('P', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_plt60.png")));
+
+            // black pieces
+            PIECE_TO_IMAGE.put('k', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_kdt60.png")));
+            PIECE_TO_IMAGE.put('q', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_qdt60.png")));
+            PIECE_TO_IMAGE.put('r', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_rdt60.png")));
+            PIECE_TO_IMAGE.put('b', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_bdt60.png")));
+            PIECE_TO_IMAGE.put('n', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_ndt60.png")));
+            PIECE_TO_IMAGE.put('p', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_pdt60.png")));
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         /*
          * Listens for mouseclicks. Updates the model, then updates the game
          * board based off of the updated model.
          */
+        // TODO: fix mouse listeners
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseReleased(MouseEvent e) {
                 Point p = e.getPoint();
-
+                int pos = getClickPos(p);
+                System.out.println(posSelected);
+                System.out.println(pos);
+                if (posSelected == -1) return; // short circuit
+                int moveIndex = getValidMoveIndex(posSelected, pos);
+                if (moveIndex != -1) {
+                    board.makeMove(possibleNextMoves.get(moveIndex));
+                    System.out.println("MOVE: " + possibleNextMoves.get(moveIndex));
+                    System.out.println(board.visualizeBoard());
+                    moveList.add(possibleNextMoves.get(moveIndex)); // TODO: DEBUG REMOVE
+                    System.out.println(moveList.toString());
+                    possibleNextMoves = board.getLegalPossibleMoves();
+                    possibleNextMovePairs = board.getMovePairs();
+                    System.out.println(Arrays.deepToString(possibleNextMovePairs));
+                    boardState = board.getBoardArray();
+                    posSelected = -1;
+                }
                 // updates the model given the coordinates of the mouseclick
-                ttt.playTurn(p.x / 100, p.y / 100);
-
                 updateStatus(); // updates the status JLabel
                 repaint(); // repaints the game board
             }
         });
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                super.mousePressed(e);
+                Point p = e.getPoint();
+                int pos = getClickPos(p);
+
+                int row = pos / 8;
+                int col = pos % 8;
+                if (boardState[row][col] != EMPTY_SQUARE && // only if non-empty
+                        (board.isWhiteTurn() && Character.isUpperCase(boardState[row][col])) // and if white turn and select white piece
+                        || (!board.isWhiteTurn() && !Character.isUpperCase(boardState[row][col]))) { // or if black turn and black piece
+                    posSelected = pos;
+                }
+            }
+        });
     }
 
+    // takes in position of click and returns the pos of square clicked (top left index = 0)
+    private int getClickPos(Point p) {
+        int x = p.x;
+        int y = p.y;
+
+        int row = y / SQUARE_LENGTH;
+        int col = x / SQUARE_LENGTH;
+
+        return row * 8 + col;
+    }
+    // TODO: optimize?
+    // returns -1 if not valid move, else returns index of move
+    private int getValidMoveIndex(int source, int target) {
+        for (int i = 0; i < possibleNextMovePairs.length; i++) {
+            int currSource = possibleNextMovePairs[i][0];
+            int currTarget = possibleNextMovePairs[i][1];
+            if (currSource == source && currTarget == target) {
+                return i;
+            }
+        }
+        return -1;
+    }
     /**
      * (Re-)sets the game to its initial state.
      */
     public void reset() {
-        ttt.reset();
-        status.setText("Player 1's Turn");
+        board.reset();
+        status.setText("White to Move");
         repaint();
 
         // Makes sure this component has keyboard/mouse focus
@@ -84,18 +195,18 @@ public class GameBoard extends JPanel {
      * Updates the JLabel to reflect the current state of the game.
      */
     private void updateStatus() {
-        if (ttt.getCurrentPlayer()) {
-            status.setText("Player 1's Turn");
+        if (board.isWhiteTurn()) {
+            status.setText(WHITE_TO_MOVE_STATUS);
         } else {
-            status.setText("Player 2's Turn");
+            status.setText(BLACK_TO_MOVE_STATUS);
         }
 
-        int winner = ttt.checkWinner();
-        if (winner == 1) {
-            status.setText("Player 1 wins!!!");
-        } else if (winner == 2) {
-            status.setText("Player 2 wins!!!");
-        } else if (winner == 3) {
+        int gameState = board.checkWinner(board.getLegalPossibleMoves());
+        if (gameState == -1) {
+            status.setText("Black Wins");
+        } else if (gameState == 1) {
+            status.setText("White Wins");
+        } else if (gameState == 2) {
             status.setText("It's a tie.");
         }
     }
@@ -115,23 +226,33 @@ public class GameBoard extends JPanel {
         super.paintComponent(g);
 
         // Draws board grid
-        int unitWidth = BOARD_WIDTH / 3;
-        int unitHeight = BOARD_HEIGHT / 3;
+        int unitWidth = BOARD_WIDTH / 8;
+        int unitHeight = BOARD_HEIGHT / 8;
 
-        g.drawLine(unitWidth, 0, unitWidth, BOARD_HEIGHT);
-        g.drawLine(unitWidth * 2, 0, unitWidth * 2, BOARD_HEIGHT);
-        g.drawLine(0, unitHeight, BOARD_WIDTH, unitHeight);
-        g.drawLine(0, unitHeight * 2, BOARD_WIDTH, unitHeight * 2);
+        // draw horizontal lines
+        for (int y = unitHeight; y < BOARD_HEIGHT; y += unitHeight) {
+            g.drawLine(0, y, BOARD_WIDTH, y);
+        }
+        // draw vertical lines
+        for (int x = unitWidth; x < BOARD_WIDTH; x += unitWidth) {
+            g.drawLine(x, 0, x, BOARD_HEIGHT);
+        }
 
-        // Draws X's and O's
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                int state = ttt.getCell(j, i);
-                if (state == 1) {
-                    g.drawOval(30 + 100 * j, 30 + 100 * i, 40, 40);
-                } else if (state == 2) {
-                    g.drawLine(30 + 100 * j, 30 + 100 * i, 70 + 100 * j, 70 + 100 * i);
-                    g.drawLine(30 + 100 * j, 70 + 100 * i, 70 + 100 * j, 30 + 100 * i);
+        // Draw pieces and color squares
+        System.out.println(Arrays.deepToString(boardState));
+
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                char pieceAtPos = boardState[row][col];
+                if (row % 2 == 1 || col % 2 == 1) { // if row or col are odd, color in
+                    g.setColor(coloredSquareColor);
+                    g.drawRect( col * SQUARE_LENGTH, row * SQUARE_LENGTH, SQUARE_LENGTH, SQUARE_LENGTH);
+                    g.setColor(Color.BLACK);
+                }
+                if (pieceAtPos != EMPTY_SQUARE) { // if piece at pos, draw it
+                    g.drawImage(PIECE_TO_IMAGE.get(pieceAtPos),
+                            col * SQUARE_LENGTH, row * SQUARE_LENGTH,null);
+
                 }
             }
         }

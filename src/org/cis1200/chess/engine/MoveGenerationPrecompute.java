@@ -1,4 +1,5 @@
 package org.cis1200.chess.engine;
+import org.cis1200.chess.engine.Constants.*;
 
 public class MoveGenerationPrecompute {
 
@@ -6,6 +7,7 @@ public class MoveGenerationPrecompute {
     public static final long RIGHT_MASK = 0x101010101010101L;
     public static final long TOP_MASK = 0xFF00000000000000L;
     public static final long BOTTOM_MASK = 0xFFL;
+
     public static final long EDGE_MASK = LEFT_MASK | RIGHT_MASK | TOP_MASK | BOTTOM_MASK;
 
     public static long[] startingBitBoards;
@@ -96,6 +98,10 @@ public class MoveGenerationPrecompute {
 
     }
 
+    private static int getPosOfMostSigBit(long n) {
+        if (n == 0) return -1;
+        return Long.numberOfLeadingZeros(n);
+    }
     private static int getPosOfLeastSigBit(long n) {
         if (n == 0) return -1;
         return 63-Long.numberOfTrailingZeros(n);
@@ -308,14 +314,25 @@ public class MoveGenerationPrecompute {
         // if isRook, only select even directions, else (bishop) odd
         boolean rankPiece = piece == 1 || piece == 2; // every sliding piece but bishop
         boolean diagonalPiece = piece != 2; // not a rook
+        if ((startingBitBoards[pos] & blockers) != 0) { // if the blocker includes piece
+            blockers ^= startingBitBoards[pos];
+        }
         for (int direction = rankPiece ? 0 : 1; direction < 8; direction += (rankPiece && diagonalPiece ? 1 : 2)) {
             long maskedBlocker = RAYS[direction][pos] & blockers; // find any piece in the way
-            int closestBlockerPos = getPosOfLeastSigBit(maskedBlocker);
+            int closestBlockerPos;
+            if (direction >= 4) { // if right or down direction
+                closestBlockerPos = getPosOfMostSigBit(maskedBlocker);
+            } else {
+                closestBlockerPos = getPosOfLeastSigBit(maskedBlocker);
+            }
             if (closestBlockerPos == -1) { // no blocker in this direction
                 slidingAttackMask |= RAYS[direction][pos];
             } else {
                 long rayMask = RAYS[direction][closestBlockerPos];
                 slidingAttackMask |= RAYS[direction][pos] ^ rayMask;
+                // add blocker back to attack mask
+                // if friendly, will filter out in getPossibleLegalMoves
+                slidingAttackMask |= startingBitBoards[closestBlockerPos];
             }
         }
         return slidingAttackMask;
