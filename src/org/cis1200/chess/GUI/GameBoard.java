@@ -137,24 +137,33 @@ public class GameBoard extends JPanel {
                     System.out.println(Arrays.deepToString(possibleNextMovePairs));
                     boardState = board.getBoardArray();
                     posSelected = -1;
+                }
+                // updates the model given the coordinates of the mouseclick
+                updateStatus(); // updates the status JLabel
+                repaint(); // repaints the game board
 
-                    updateStatus();
-                    repaint();
+                SwingUtilities.invokeLater(() -> {
                     // if AI is playing get best move
                     if (isAIPlayingBlack && !board.isWhiteTurn()) {
                         status.setText("AI is thinking...");
+                        long startTime = System.currentTimeMillis();
                         int aiMove = aiEngine.getBestMove(board);
+                        long endTime = System.currentTimeMillis();
                         board.makeMove(aiMove);
                         moveList.add(aiMove);
                         possibleNextMoves = board.getLegalPossibleMoves();
                         possibleNextMovePairs = board.getMovePairs();
                         boardState = board.getBoardArray();
+                        System.out.println("Nodes Searched: " + aiEngine.nodesSearched);
+                        System.out.println("Time Searched (ms): " + (endTime-startTime));
+                        System.out.println("Nodes per Second: " + (((float) aiEngine.nodesSearched) / ((float) (endTime-startTime))) * 1000.0);
+
+                        aiEngine.nodesSearched = 0;
                         // don't have to reset posSelected because I already did above
                     }
-                }
-                // updates the model given the coordinates of the mouseclick
-                updateStatus(); // updates the status JLabel
-                repaint(); // repaints the game board
+                    updateStatus();
+                    repaint();
+                });
             }
         });
         addMouseListener(new MouseAdapter() {

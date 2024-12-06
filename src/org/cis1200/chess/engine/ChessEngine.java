@@ -13,8 +13,9 @@ public class ChessEngine {
 
     private static final int MAX = 1000;
     private static final int MIN = -1000;
-    private static final int MAX_SEARCH_DEPTH = 3;
+    private static final int MAX_SEARCH_DEPTH = 5;
 
+    public int nodesSearched = 0;
 
 
     private static final int[] WHITE_PAWN_POS_TABLE =
@@ -252,6 +253,11 @@ public class ChessEngine {
             whiteScore += WHITE_KING_POS_ENDGAME_TABLE[whiteKingPos];
             int blackKingPos = board.getPosOfLeastSigBit(board.blackBitBoards[0]);
             blackScore += BLACK_KING_POS_ENDGAME_TABLE[blackKingPos];
+        } else {
+            int whiteKingPos = board.getPosOfLeastSigBit(board.whiteBitBoards[0]);
+            whiteScore += WHITE_KING_POS_TABLE[whiteKingPos];
+            int blackKingPos = board.getPosOfLeastSigBit(board.blackBitBoards[0]);
+            blackScore += BLACK_KING_POS_TABLE[blackKingPos];
         }
         return (whiteScore + 3 * whitePieceScore) - (blackScore + 3 * blackPieceScore);
     }
@@ -263,6 +269,7 @@ public class ChessEngine {
     // maximizing player = white
     // returns 2 element int array [move (int), score]
     private int[] minimax(ChessBoard board, int depth, boolean isMaximizingPlayer, int alpha, int beta) {
+        nodesSearched += 1;
         ArrayList<Integer> moves = board.getLegalPossibleMoves();
         int gameState = board.checkWinner(moves);
         if (gameState == 1) { // white win
