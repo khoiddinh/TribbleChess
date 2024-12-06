@@ -520,9 +520,42 @@ public class ChessBoard {
                 }
 
                 // handle pawn enPassant ONLY
+                // adds additional enPassant moves
                 if (piece == 5) {
-                    // TODO: add enPassant flag
-                    String s = "";
+                    if (!moveStack.isEmpty()) {
+                        int prevMove = moveStack.peek();
+                        int prevMoveSource = prevMove & 0b111111;
+                        int prevMoveTarget = (prevMove & (0b111111 << 6)) >>> 6;
+                        int prevMovePiece = (prevMove & (0b111 << 12)) >>> 12;
+                        if (isWhiteTurn && prevMovePiece == 5 && (Math.abs(prevMoveSource-prevMoveTarget) == 16)) {
+                            System.out.println(prevMoveSource);
+                            System.out.println(prevMoveTarget);
+                        }
+                        if (prevMovePiece == 5 &&
+                                (Math.abs(prevMoveSource-prevMoveTarget) == 16)) { // if pawn and two square move
+                            if (((startingBitBoards[pos] & LEFT_SIDE_BOARD) == 0)) { // if pawn not on left edge
+                                // calculate left side enPassant
+                                if (pos-1 == prevMoveTarget) { // if prev move directly left of curr pawn pos
+                                    possibleMoves.add(encodeMove(pos, isWhiteTurn ? pos-9 : pos + 7, 5,
+                                            true, 5,
+                                            false, 0,
+                                            false, 0, encodeCastleState(),
+                                            true));
+                                }
+                            }
+                            if (((startingBitBoards[pos] & RIGHT_SIDE_BOARD) == 0)) { // if pawn not on right edge
+                                // calculate right side enPassant
+                                if (pos+1 == prevMoveTarget) { // if prev move directly left of curr pawn pos
+                                    possibleMoves.add(encodeMove(pos, isWhiteTurn ? pos-7 : pos + 9, 5,
+                                            true, 5,
+                                            false, 0,
+                                            false, 0, encodeCastleState(),
+                                            true));
+                                }
+                            }
+
+                        }
+                    }
                 }
 
                 // ADD REGULAR MOVES
@@ -611,8 +644,12 @@ public class ChessBoard {
         // add at new target location
         bitBoardList[piece] |= startingBitBoards[target];
         // if capture move, update the capture bitboard in opponent bitboard
-        if (capture) {
+        if (capture && !enPassant) { // don't handle enPassant b/c target isn't loc of enemy pawn
             opponentBitBoardList[pieceCaptured] ^= startingBitBoards[target]; // remove captured piece
+        }
+        if (enPassant) {
+            // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
+            opponentBitBoardList[5] ^= startingBitBoards[isWhiteTurn ? target + 8 : target - 8];
         }
         // if promotion, replace the pawn (that we already moved) with the promoted piece
         if (promotion) {
@@ -657,7 +694,6 @@ public class ChessBoard {
                 case 2: // rook
                     if (isWhiteTurn) {
                         if (source == 63) { // white right rook
-                            System.out.println("EEEEEE");
                             whiteCanRightCastle = false;
                         } else if (source == 56) { // white left rook
                             whiteCanLeftCastle = false;
@@ -674,11 +710,7 @@ public class ChessBoard {
         }
         // Do nothing with castle state, this is solely for undoMove function
 
-        // already updated friendly pawn's location above, just remove enemy pawn
-        if (enPassant) {
-            // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
-            opponentBitBoardList[5] ^= startingBitBoards[isWhiteTurn ? target + 8 : target - 8];
-        }
+
 
         // add move to moveStack
         moveStack.add(move);
@@ -702,6 +734,9 @@ public class ChessBoard {
         int castleState = (move & (0b1111 << 24)) >>> 24; // previous state before move
         boolean enPassant = ((move & (1 << 28)) >>> 28) == 1;
 
+        if (enPassant) {
+            String s = "";
+        }
         long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
         long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
         // if promotion, remove promoted piece from target
@@ -713,11 +748,17 @@ public class ChessBoard {
         }
         // add it back to the original place
         bitBoardList[piece] |= startingBitBoards[source];
+        printBitBoard(bitBoardList[piece]);
         // if captured, add the enemy piece back to its spot
-        if (capture) {
+        if (capture && !enPassant) { // don't consider enPassant, handle replace below in the enPassant block
             opponentBitBoardList[pieceCaptured] |= startingBitBoards[target];
         }
-
+        // put the captured pawn back, already moved capturing pawn back
+        if (enPassant) {
+            // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
+            opponentBitBoardList[5] |= startingBitBoards[isWhiteTurn ? target + 8 : target - 8];
+            printBitBoard(opponentBitBoardList[5]);
+        }
 
         // if castle, move rook back and fix castle fields
         if (castleMove) {
@@ -738,12 +779,6 @@ public class ChessBoard {
         blackCanRightCastle = ((castleState & (1 << 1)) >>> 1) == 1;
         whiteCanLeftCastle = ((castleState & (1 << 2)) >>> 2) == 1;
         whiteCanRightCastle = ((castleState & (1 << 3)) >>> 3) == 1;
-
-        // put the captured pawn back, already moved capturing pawn back
-        if (enPassant) {
-            // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
-            opponentBitBoardList[5] |= startingBitBoards[isWhiteTurn ? target + 8 : target - 8];
-        }
     }
 
     // TODO: implement

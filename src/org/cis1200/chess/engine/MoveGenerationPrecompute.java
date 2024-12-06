@@ -1,5 +1,4 @@
 package org.cis1200.chess.engine;
-import org.cis1200.chess.engine.Constants.*;
 
 public class MoveGenerationPrecompute {
 
