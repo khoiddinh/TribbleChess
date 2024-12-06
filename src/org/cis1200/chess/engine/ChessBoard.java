@@ -39,7 +39,7 @@ public class ChessBoard {
 
     private static final MoveGenerationPrecompute precompute = new MoveGenerationPrecompute();
 
-    private Stack<Integer> moveStack;
+    public Stack<Integer> moveStack;
 
     public ChessBoard() {
 
@@ -266,7 +266,7 @@ public class ChessBoard {
     }
 
     // gets the top left zero indexed position of least sig bit
-    private int getPosOfLeastSigBit(long n) {
+    public int getPosOfLeastSigBit(long n) {
         return 63-Long.numberOfTrailingZeros(n);
     }
 
@@ -730,7 +730,6 @@ public class ChessBoard {
         }
         // add it back to the original place
         bitBoardList[piece] |= startingBitBoards[source];
-        printBitBoard(bitBoardList[piece]);
         // if captured, add the enemy piece back to its spot
         if (capture && !enPassant) { // don't consider enPassant, handle replace below in the enPassant block
             opponentBitBoardList[pieceCaptured] |= startingBitBoards[target];
@@ -739,7 +738,6 @@ public class ChessBoard {
         if (enPassant) {
             // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
             opponentBitBoardList[5] |= startingBitBoards[isWhiteTurn ? target + 8 : target - 8];
-            printBitBoard(opponentBitBoardList[5]);
         }
 
         // if castle, move rook back and fix castle fields

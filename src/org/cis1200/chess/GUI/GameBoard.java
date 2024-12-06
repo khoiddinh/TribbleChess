@@ -22,6 +22,8 @@ import javax.swing.*;
 
 import static org.cis1200.chess.engine.ChessBoard.EMPTY_SQUARE;
 
+import org.cis1200.chess.engine.ChessEngine;
+import org.cis1200.chess.engine.ChessEngine.*;
 /**
  * This class instantiates a TicTacToe object, which is the model for the game.
  * As the user clicks the game board, the model is updated. Whenever the model
@@ -61,6 +63,8 @@ public class GameBoard extends JPanel {
     private ArrayList<Integer> possibleNextMoves; // to actually move
     private int posSelected;
 
+    private static final boolean isAIPlayingBlack = true;
+    private static final ChessEngine aiEngine = new ChessEngine();
     private ArrayList<Integer> moveList;
     /**
      * Initializes the game board.
@@ -133,6 +137,20 @@ public class GameBoard extends JPanel {
                     System.out.println(Arrays.deepToString(possibleNextMovePairs));
                     boardState = board.getBoardArray();
                     posSelected = -1;
+
+                    updateStatus();
+                    repaint();
+                    // if AI is playing get best move
+                    if (isAIPlayingBlack && !board.isWhiteTurn()) {
+                        status.setText("AI is thinking...");
+                        int aiMove = aiEngine.getBestMove(board);
+                        board.makeMove(aiMove);
+                        moveList.add(aiMove);
+                        possibleNextMoves = board.getLegalPossibleMoves();
+                        possibleNextMovePairs = board.getMovePairs();
+                        boardState = board.getBoardArray();
+                        // don't have to reset posSelected because I already did above
+                    }
                 }
                 // updates the model given the coordinates of the mouseclick
                 updateStatus(); // updates the status JLabel
