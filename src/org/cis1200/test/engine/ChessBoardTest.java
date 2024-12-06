@@ -107,6 +107,7 @@ class ChessBoardTest {
         assertFalse(actual);
     }
 
+    // TODO: fix
     @Test
     public void testPin() {
         ChessBoard board = new ChessBoard();
@@ -118,9 +119,6 @@ class ChessBoardTest {
         board.makeMove(251672189);
         board.makeMove(251680459);
         board.makeMove(252036909);
-        board.getLegalPossibleMoves();
-
-        //board.makeMove(251971346); // knight move king exposed
         boolean actual = board.isSquareAttacked(4, board.orBitBoardArray(board.blackBitBoards),
                 board.orBitBoardArray(board.whiteBitBoards));
         assertTrue(actual);

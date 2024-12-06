@@ -229,8 +229,6 @@ public class ChessBoard {
                 char symbol = symbols[i];
                 if ((bitboard & HEAD_INT) != 0) { // check if there is a piece at that position
                     if (symbolAtPos != EMPTY_SQUARE) { // sanity check to make sure there aren't two pieces at same pos
-                        System.out.println(symbolAtPos);
-                        System.out.println(piecePos);
                         throw new RuntimeException("Two Pieces found at the same square");
                     }
                     symbolAtPos = symbol;
@@ -382,12 +380,6 @@ public class ChessBoard {
         encodedState |= (blackCanRightCastle ? 1 : 0) << 1;
         encodedState |= (whiteCanLeftCastle ? 1 : 0) << 2;
         encodedState |= (whiteCanRightCastle ? 1 : 0) << 3;
-        if (encodedState != 0b1111) {
-            System.out.println(visualizeBoard());
-            System.out.println(whiteCanRightCastle);
-            String s = "";
-
-        }
         return encodedState;
     }
 
@@ -527,10 +519,6 @@ public class ChessBoard {
                         int prevMoveSource = prevMove & 0b111111;
                         int prevMoveTarget = (prevMove & (0b111111 << 6)) >>> 6;
                         int prevMovePiece = (prevMove & (0b111 << 12)) >>> 12;
-                        if (isWhiteTurn && prevMovePiece == 5 && (Math.abs(prevMoveSource-prevMoveTarget) == 16)) {
-                            System.out.println(prevMoveSource);
-                            System.out.println(prevMoveTarget);
-                        }
                         if (prevMovePiece == 5 &&
                                 (Math.abs(prevMoveSource-prevMoveTarget) == 16)) { // if pawn and two square move
                             if (((startingBitBoards[pos] & LEFT_SIDE_BOARD) == 0)) { // if pawn not on left edge
@@ -615,9 +603,7 @@ public class ChessBoard {
                 pieceBitBoard ^= startingBitBoards[pos]; // remove piece from bitboard and process next
             }
         }
-        System.out.println(possibleMoves.size());
         ArrayList<Integer> filteredMoves = filterLegalMoves(possibleMoves);
-        System.out.println(filteredMoves.size());
         return filteredMoves;
     }
 
@@ -669,7 +655,6 @@ public class ChessBoard {
             }
             // update the castle fields
             if (isWhiteTurn) {
-                System.out.println("FFFFF");
                 whiteCanLeftCastle = false;
                 whiteCanRightCastle = false;
             } else { // black
@@ -734,9 +719,6 @@ public class ChessBoard {
         int castleState = (move & (0b1111 << 24)) >>> 24; // previous state before move
         boolean enPassant = ((move & (1 << 28)) >>> 28) == 1;
 
-        if (enPassant) {
-            String s = "";
-        }
         long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
         long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
         // if promotion, remove promoted piece from target

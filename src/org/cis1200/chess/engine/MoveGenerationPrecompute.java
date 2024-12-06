@@ -167,7 +167,6 @@ public class MoveGenerationPrecompute {
 
         // Mask for top and bottom ranks
         long topRank = TOP_MASK;
-        //printBitBoard(fileAB | topRank);
         long bottomRank = BOTTOM_MASK;
         long top2Ranks = 0xFFFF000000000000L; // Exclude ranks 7 and 8
         long bottom2Ranks = 0xFFFFL; // Exclude ranks 1 and 2
