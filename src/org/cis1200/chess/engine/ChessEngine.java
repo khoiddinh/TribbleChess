@@ -11,12 +11,12 @@ public class ChessEngine {
 
     private static HashMap<Integer, Integer> PIECE_TO_SCORE;
 
-    private static final int MAX = 1000;
-    private static final int MIN = -1000;
-    private static final int MAX_SEARCH_DEPTH = 5;
+    private static final int MAX = Integer.MAX_VALUE;
+    private static final int MIN = Integer.MIN_VALUE;
+    private static final int MAX_SEARCH_DEPTH = 2;
 
     public int nodesSearched = 0;
-
+    public int pruneAmount = 0;
 
     private static final int[] WHITE_PAWN_POS_TABLE =
             {0,  0,  0,  0,  0,  0,  0,  0,
@@ -92,8 +92,8 @@ public class ChessEngine {
             {0,  0,  0,  0,  0,  0,  0,  0,
                     5, 10, 10,-20,-20, 10, 10,  5,
                     5, -5,-10,  0,  0,-10, -5,  5,
-                    0,  0,  0, 20, 20,  0,  0,  0,
-                    5,  5, 10, 25, 25, 10,  5,  5,
+                    0,  0,  0, 40, 40,  0,  0,  0,
+                    5,  5, 10, 45, 45, 10,  5,  5,
                     10, 10, 20, 30, 30, 20, 10, 10,
                     50, 50, 50, 50, 50, 50, 50, 50,
                     0,  0,  0,  0,  0,  0,  0,  0};
@@ -140,7 +140,7 @@ public class ChessEngine {
 
     private static final int[] BLACK_KING_POS_TABLE =
             {20, 30, 10,  0,  0, 10, 30, 20,
-                    20, 20,  0,  0,  0,  0, 20, 20,
+                    20, 20,  0,  -10,  -10,  0, 20, 20,
                     -10,-20,-20,-20,-20,-20,-20,-10,
                     -20,-30,-30,-40,-40,-30,-30,-20,
                     -30,-40,-40,-50,-50,-40,-40,-30,
@@ -174,6 +174,16 @@ public class ChessEngine {
                     BLACK_KNIGHT_POS_TABLE,
                     BLACK_PAWN_POS_TABLE};
 
+    private static final int[] POSITION_WEIGHTS = {
+            0, 0, 0, 10, 10, 0, 0, 0,
+            0, 5, 10, 20, 20, 10, 5, 0,
+            0, 7, 20, 30, 30, 20, 7, 0,
+            0, 10, 30, 50, 50, 30, 10, 0,
+            0, 10, 30, 50, 50, 30, 10, 0,
+            0, 7, 20, 30, 30, 20, 7, 0,
+            0, 5, 10, 20, 20, 10, 5, 0,
+            0, 0, 0, 10, 10, 0, 0, 0
+    };
     public ChessEngine() {
         PIECE_TO_SCORE = new HashMap<>();
         PIECE_TO_SCORE.put(0, 0); // king = 0 points
@@ -200,24 +210,36 @@ public class ChessEngine {
 
         int score = 0;
         if (promotion) {
-            score += 3 * promotionPiece;
+            score += 30 * promotionPiece;
         }
+        /*
         if (capture) {
-            score += 2 * (PIECE_TO_SCORE.get(pieceCaptured) - PIECE_TO_SCORE.get(piece));
+            score += -PIECE_TO_SCORE.get(piece);
         }
+
+         */
         if (castleMove) {
             score += castleDirection == 0 ? 10 : 8; // slightly prefer right castle
         }
+        // position weights (value center moves)
+        score += 10 * POSITION_WEIGHTS[target];
         return score;
 
     }
     private int compareMove(Integer move1, Integer move2) {
+        if (move1 == 0b11111111111111111111111111111111 || move2 == 0b11111111111111111111111111111111) {
+            String s = "";
+        }
         return scoreMove(move2) - scoreMove(move1);
     }
 
     // sort in place
-    private void sortMoves(ArrayList<Integer> moves) {
-        Collections.sort(moves, (move1, move2) -> compareMove(move1, move2));
+    private void sortMoves(ArrayList<Integer> moves, boolean descending) {
+        if (descending) {
+            Collections.sort(moves, (move1, move2) -> compareMove(move1, move2));
+        } else {
+            Collections.sort(moves, (move1, move2) -> compareMove(move2, move1));
+        }
     }
     // eval board: + nums good for white, - nums good for black
     private int evalBoard(ChessBoard board) {
@@ -229,7 +251,7 @@ public class ChessEngine {
             int pieceScore = PIECE_TO_SCORE.get(piece);
             while (pieceBitBoard != 0) {
                 int pos = board.getPosOfLeastSigBit(pieceBitBoard);
-                whiteScore += WHITE_PIECE_POS_TABLE[piece][pos]; // add location bonus
+                whiteScore += 10 * WHITE_PIECE_POS_TABLE[piece][pos]; // add location bonus
                 whitePieceScore += pieceScore; // add piece score bonus
                 pieceBitBoard ^= startingBitBoards[pos]; // remove piece from consideration
             }
@@ -243,7 +265,7 @@ public class ChessEngine {
             int pieceScore = PIECE_TO_SCORE.get(piece);
             while (pieceBitBoard != 0) {
                 int pos = board.getPosOfLeastSigBit(pieceBitBoard);
-                blackScore += BLACK_PIECE_POS_TABLE[piece][pos]; // add location bonus
+                blackScore += 10 * BLACK_PIECE_POS_TABLE[piece][pos]; // add location bonus
                 blackPieceScore += pieceScore; // add piece score bonus
                 pieceBitBoard ^= startingBitBoards[pos]; // remove piece from consideration
             }
@@ -255,15 +277,22 @@ public class ChessEngine {
             blackScore += BLACK_KING_POS_ENDGAME_TABLE[blackKingPos];
         } else {
             int whiteKingPos = board.getPosOfLeastSigBit(board.whiteBitBoards[0]);
-            whiteScore += WHITE_KING_POS_TABLE[whiteKingPos];
+            whiteScore += 10 * WHITE_KING_POS_TABLE[whiteKingPos];
             int blackKingPos = board.getPosOfLeastSigBit(board.blackBitBoards[0]);
-            blackScore += BLACK_KING_POS_TABLE[blackKingPos];
+            blackScore += 10 * BLACK_KING_POS_TABLE[blackKingPos];
         }
-        return (whiteScore + 3 * whitePieceScore) - (blackScore + 3 * blackPieceScore);
+        return (whiteScore - blackScore) + 80 * (whitePieceScore - blackPieceScore);
     }
 
     public int getBestMove(ChessBoard board) {
         int[] result = minimax(board, 0, board.isWhiteTurn(), MIN, MAX);
+        for (int move : board.getLegalPossibleMoves()) {
+            board.makeMove(move);
+            System.out.println(board.visualizeBoard());
+            System.out.println(evalBoard(board));
+            //board.printBinary(move);
+            board.undoLastMove();
+        }
         return result[0];
     }
     // maximizing player = white
@@ -282,11 +311,13 @@ public class ChessEngine {
         } else if (depth == MAX_SEARCH_DEPTH) {
             return new int[]{-1, evalBoard(board)};
         }
+        //System.out.println(moves);
+        sortMoves(moves, isMaximizingPlayer);
+       // System.out.println(moves);
         if (isMaximizingPlayer) { // white
             int bestScore = MIN;
             int bestMove = -1;
             for (int move : moves) {
-
                 board.makeMove(move);
                 int[] result = minimax(board, depth+1,
                         false, alpha, beta);
@@ -311,7 +342,7 @@ public class ChessEngine {
 
                 board.makeMove(move);
                 int[] result = minimax(board, depth+1,
-                        false, alpha, beta);
+                        true, alpha, beta);
                 int currScore = result[1];
                 board.undoLastMove();
                 if (currScore < bestScore) {
@@ -322,8 +353,14 @@ public class ChessEngine {
                 beta = Math.min(bestScore, beta);
 
                 if (beta <= alpha) {
+                    pruneAmount += 1;
                     break;
                 }
+            }
+            if (bestMove == -1) {
+                System.out.println(board.visualizeBoard());
+                System.out.println(moves);
+                System.out.println(board.getLegalPossibleMoves());
             }
             return new int[]{bestMove, bestScore};
         }

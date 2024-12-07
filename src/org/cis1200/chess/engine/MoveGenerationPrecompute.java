@@ -1,5 +1,9 @@
 package org.cis1200.chess.engine;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Random;
+
 public class MoveGenerationPrecompute {
 
     public static final long LEFT_MASK = 0x8080808080808080L;
@@ -44,9 +48,14 @@ public class MoveGenerationPrecompute {
     // position is square (n) where 0 <= n < 64
 
     // Magic Bitboard Lookup Tables
-    public static long[][] BISHOP_TABLE;
-    public static long[][] ROOK_TABLE;
-    public static long[][] QUEEN_TABLE;
+    public static long[][] BISHOP_ATTACK_TABLE; // [pos][has
+    public static long[][] ROOK_ATTACK_TABLE;
+
+    private static long[] BISHOP_MAGICS;
+    private static long[] ROOK_MAGICS;
+
+    private static final int ROOK_SHIFT = 52;
+    private static final int BISHOP_SHIFT = 55;
 
     public MoveGenerationPrecompute() {
         startingBitBoards = new long[64];
@@ -94,7 +103,13 @@ public class MoveGenerationPrecompute {
         for (int i = 0; i < 64; i++) {
             queenAttackMasks[i] = generateQueenAttackMask(i);
         }
+        ROOK_MAGICS = new long[64];
+        BISHOP_MAGICS = new long[64];
 
+        ROOK_ATTACK_TABLE = new long[64][]; // 64 * 2^12 (4096) (possible combos of blocker)
+        BISHOP_ATTACK_TABLE = new long[64][]; // 64 * 2^9 (512)
+        generateRookMagicBitBoards();
+        generateBishopMagicBitBoards();
     }
 
     private static int getPosOfMostSigBit(long n) {
@@ -250,15 +265,21 @@ public class MoveGenerationPrecompute {
 
         // Vertical (up and down)
         attackMask ^= LEFT_MASK >>> file; // subtracts piece position (overlap)
+
+        // remove edge for magic bitboard
+        // attackMask &= ~EDGE_MASK;
         return attackMask;
     }
 
     // TODO: write tests
     public long generateBishopAttackMask(int square) {
         long attackMask = 0;
-        for (int direction = 0; direction < 8; direction++) {
+        for (int direction = 1; direction < 8; direction += 2) {
             attackMask |= RAYS[direction][square];
         }
+
+        // remove edge for magic bitboard
+        //attackMask &= ~EDGE_MASK;
         return attackMask;
     }
 
@@ -336,7 +357,151 @@ public class MoveGenerationPrecompute {
         return slidingAttackMask;
     }
 
-    private long magicHash(int pos, long blockers, int index_bits, long magic) {
-        return (blockers * magic) >>> (64 - index_bits);
+    private long generateDenseLong() {
+        Random random = new Random();
+        long num1 = random.nextLong() & 0xFFFF;
+        long num2 = random.nextLong() & 0xFFFF;
+        long num3 = random.nextLong() & 0xFFFF;
+        long num4 = random.nextLong() & 0xFFFF;
+        return num1 | (num2 << 16) | (num3 << 32) | (num4 << 48);
+    }
+
+    private long generateMagicCandidate() {
+        return generateDenseLong() & generateDenseLong() & generateDenseLong();
+    }
+
+    // Carry-Rippler
+    private ArrayList<Long> getAllBlockerCombinations(int pos, int piece) {
+        if (piece != 2 && piece != 3) throw new RuntimeException("Invalid piece");
+        ArrayList<Long> blockerCombinations = new ArrayList<>();
+        long subset = 0;
+        long mask = (piece == 2) ?
+                rookAttackMasks[pos] : bishopAttackMasks[pos]; // no blocker attack mask
+        do {
+            subset = (subset - mask) & mask;
+            blockerCombinations.add(subset);
+        } while (subset != 0);
+        return blockerCombinations;
+    }
+    private long findRookMagicNumber(int pos, ArrayList<Long> blockerCombos) {
+        long magic = 0;
+        boolean foundMagic = false;
+        long[] currMap = new long[16384];
+        int shiftAmount = Long.bitCount(rookAttackMasks[pos]);
+        while (!foundMagic) {
+            magic = generateMagicCandidate();
+            // clear previous incomplete attack table at pos
+            currMap = new long[16384];
+            boolean magicIsInvalid = false;
+            for (long blocker : blockerCombos) {
+                int index = magicHash(blocker, shiftAmount, magic);
+                //System.out.println(index);
+                long attackMask = getSlidingAttackWithBlockers(pos, blocker, 2);
+                // if already found an attack mask at index
+                if (currMap[index] != 0) {
+                    // if not same attackMask magic is invalid
+                    if ((attackMask != currMap[index])) {
+                        magicIsInvalid = true;
+                        break;
+                    }
+                } else { // if no attack mask there yet, add one
+                    currMap[index] = attackMask;
+                }
+            }
+            if (!magicIsInvalid) {
+                foundMagic = true;
+            }
+        }
+        ROOK_ATTACK_TABLE[pos] = currMap;
+        return magic;
+        //while (magic not found)
+            // init / clear rook look up
+            // for all possible blocker combinations at pos
+                // key = magicHash(..)
+                // attackMask = getSlidingAttackMask(..)
+                // if key (index) already in lookup table, make sure
+                // that attackMask == table[key]
+                    // if improper collision, break and try new magic
+                // else add the key, attackMask pair
+
+    }
+
+    // inits it directly
+    public void generateRookMagicBitBoards() {
+        for (int pos = 0; pos < 64; pos++) {
+            System.out.println(pos);
+            ROOK_MAGICS[pos] = findRookMagicNumber(pos, getAllBlockerCombinations(pos, 2));
+        }
+    }
+
+    private long findBishopMagicNumber(int pos, ArrayList<Long> blockerCombos) {
+        long magic = 0;
+        boolean foundMagic = false;
+        long[] currMap = new long[16384];
+        int shiftAmount = Long.bitCount(bishopAttackMasks[pos]);
+        while (!foundMagic) {
+            magic = generateMagicCandidate();
+            // clear previous incomplete attack table at pos
+            currMap = new long[16384];
+            boolean magicIsInvalid = false;
+            for (long blocker : blockerCombos) {
+                int index = magicHash(blocker, shiftAmount, magic);
+                //System.out.println(index);
+                long attackMask = getSlidingAttackWithBlockers(pos, blocker, 3);
+                // if already found an attack mask at index
+                if (currMap[index] != 0) {
+                    // if not same attackMask magic is invalid
+                    if ((attackMask != currMap[index])) {
+                        magicIsInvalid = true;
+                        break;
+                    }
+                } else { // if no attack mask there yet, add one
+                    currMap[index] = attackMask;
+                }
+            }
+            if (!magicIsInvalid) {
+                foundMagic = true;
+            }
+        }
+        BISHOP_ATTACK_TABLE[pos] = currMap;
+        return magic;
+    }
+
+    // inits it directly
+    public void generateBishopMagicBitBoards() {
+        for (int pos = 0; pos < 64; pos++) {
+            BISHOP_MAGICS[pos] = findBishopMagicNumber(pos, getAllBlockerCombinations(pos, 3));
+        }
+    }
+    private int magicHash(long blockers, int shift, long magic){
+        return (int) ((blockers * magic) >>> (64-shift));
+    }
+
+    // takes in generic blockers, not masked ones for the row and col (or diagonal)
+    public long getSlidingMagicAttack(int pos, long blockers, int piece) {
+        long slidingAttackMask = 0;
+        switch (piece) {
+            case 1: {// queen
+                long rookMaskedBlockers = blockers & rookAttackMasks[pos];
+                int rookIndex = magicHash(rookMaskedBlockers, Long.bitCount(rookAttackMasks[pos]), ROOK_MAGICS[pos]);
+                long bishopMaskedBlockers = blockers & bishopAttackMasks[pos];
+                int bishopIndex = magicHash(bishopMaskedBlockers, Long.bitCount(bishopAttackMasks[pos]), BISHOP_MAGICS[pos]);
+                slidingAttackMask = ROOK_ATTACK_TABLE[pos][rookIndex] | BISHOP_ATTACK_TABLE[pos][bishopIndex];
+                break;
+            }
+            case 2: { // rook
+                long maskedBlockers = blockers & rookAttackMasks[pos];
+                int index = magicHash(maskedBlockers, Long.bitCount(rookAttackMasks[pos]), ROOK_MAGICS[pos]);
+                slidingAttackMask = ROOK_ATTACK_TABLE[pos][index];
+                break;
+            }
+            case 3: {  // bishop
+                long maskedBlockers = blockers & bishopAttackMasks[pos];
+                int index = magicHash(maskedBlockers, Long.bitCount(bishopAttackMasks[pos]), BISHOP_MAGICS[pos]);
+                slidingAttackMask = BISHOP_ATTACK_TABLE[pos][index];
+                break;
+            }
+        }
+        return slidingAttackMask;
     }
 }

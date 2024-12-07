@@ -95,10 +95,9 @@ public class ChessBoard {
     }
 
     // -1 = black win, 0 = no winner, 1 = white win, 2 = draw
-    public int checkWinner(ArrayList<Integer> legalMoves) {
+    public int checkWinner(ArrayList<Integer> moves) {
         long whitePieces = orBitBoardArray(whiteBitBoards);
         long blackPieces = orBitBoardArray(blackBitBoards);
-        ArrayList<Integer> moves = getLegalPossibleMoves();
         if (isWhiteTurn && moves.isEmpty()) {
             if (isKingInCheck(whiteBitBoards[0], whitePieces, blackPieces)) {
                 return -1;
@@ -270,7 +269,7 @@ public class ChessBoard {
         return 63-Long.numberOfTrailingZeros(n);
     }
 
-    private void printBinary(int n) {
+    public void printBinary(int n) {
         System.out.println(Integer.toBinaryString(n));
     }
 
@@ -280,6 +279,9 @@ public class ChessBoard {
                           boolean capture, int pieceCaptured, boolean promotion,
                           int promotionPiece, boolean castleMove,
                           int castleDirection, int castleState, boolean enPassant) {
+        if (piece == 7) {
+            throw new RuntimeException();
+        }
         int encodedMove = 0;
         encodedMove |= source;
         encodedMove |= target << 6;
@@ -305,15 +307,19 @@ public class ChessBoard {
                 moveMask = kingAttackMasks[pos];
                 break;
             case 1: // queen
+                /*
                 moveMask = getSlidingAttackWithBlockers(
                         pos, blockerBitBoard, 1);
+                 */
+                moveMask = precompute.getSlidingMagicAttack(pos, blockerBitBoard, 1);
                 break;
             case 2: // rook
-                moveMask = getSlidingAttackWithBlockers(pos, blockerBitBoard, 2);
+                // moveMask = getSlidingAttackWithBlockers(pos, blockerBitBoard, 2);
+                moveMask = precompute.getSlidingMagicAttack(pos, blockerBitBoard, 2);
                 break;
             case 3: // bishop
-                moveMask = getSlidingAttackWithBlockers(pos, blockerBitBoard, 3);
-
+                //moveMask = getSlidingAttackWithBlockers(pos, blockerBitBoard, 3);
+                moveMask = precompute.getSlidingMagicAttack(pos, blockerBitBoard, 3);
                 break;
             case 4: // knight
                 moveMask = knightAttackMasks[pos];
@@ -349,7 +355,8 @@ public class ChessBoard {
                 case 1: // queen
                 case 2: // rook
                 case 3: // bishop
-                    potentialAttacks[piece] = getSlidingAttackWithBlockers(pos, blockerBitBoard, piece);
+                    // potentialAttacks[piece] = getSlidingAttackWithBlockers(pos, blockerBitBoard, piece);
+                    potentialAttacks[piece] = precompute.getSlidingMagicAttack(pos, blockerBitBoard, piece);
                     break;
                 case 4: // knight
                     potentialAttacks[piece] = knightAttackMasks[pos];
@@ -386,6 +393,10 @@ public class ChessBoard {
     // gets if king is currently in check (includes but doesn't distinguish mate)
     public boolean isKingInCheck(long kingBitBoard, long friendlyBitBoard, long opponentBitBoard) {
         int kingPos = getPosOfLeastSigBit(kingBitBoard);
+        if (kingPos == -1) {
+            printBitBoard(kingBitBoard);
+            System.out.println(visualizeBoard());
+        }
         return isSquareAttacked(kingPos, friendlyBitBoard, opponentBitBoard);
     }
 
@@ -401,10 +412,10 @@ public class ChessBoard {
     }
 
     // TODO: TEST
-    private ArrayList<Integer> filterLegalMoves(ArrayList<Integer> moves) {
+    private void filterLegalMoves(ArrayList<Integer> moves) {
         long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
-        ArrayList<Integer> legalMoves = new ArrayList<>();
-        for (int move : moves) {
+        for (int i = moves.size() - 1; i >= 0; i--) {
+            int move = moves.get(i);
             makeMove(move);
             switchTurn(); // because make move switches turn,
             // but we want to check king check with respect to previous color
@@ -413,13 +424,12 @@ public class ChessBoard {
             long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
             long friendlyBitBoard = orBitBoardArray(friendlyBitBoardList);
             long opponentBitBoard = orBitBoardArray(opponentBitBoardList);
-            if (!isKingInCheck(bitBoardList[0], friendlyBitBoard, opponentBitBoard)) { // legal
-                legalMoves.add(move);
+            if (isKingInCheck(bitBoardList[0], friendlyBitBoard, opponentBitBoard)) { // legal
+                moves.remove(i);
             }
             switchTurn(); // switch turn back
             undoLastMove();
         }
-        return legalMoves;
     }
 
     // move encoding (in top bottom order of most sig to least sig digit):
@@ -603,8 +613,8 @@ public class ChessBoard {
                 pieceBitBoard ^= startingBitBoards[pos]; // remove piece from bitboard and process next
             }
         }
-        ArrayList<Integer> filteredMoves = filterLegalMoves(possibleMoves);
-        return filteredMoves;
+        filterLegalMoves(possibleMoves);
+        return possibleMoves;
     }
 
     // plays move, updates bitboards, and switches turn
@@ -626,7 +636,14 @@ public class ChessBoard {
         long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
         long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
         // remove piece at source location
-        bitBoardList[piece] ^= startingBitBoards[source];
+        try {
+            bitBoardList[piece] ^= startingBitBoards[source];
+        } catch (Exception e) {
+            System.out.println(source);
+            System.out.println(target);
+            System.out.println(piece);
+            throw new RuntimeException(e);
+        }
         // add at new target location
         bitBoardList[piece] |= startingBitBoards[target];
         // if capture move, update the capture bitboard in opponent bitboard

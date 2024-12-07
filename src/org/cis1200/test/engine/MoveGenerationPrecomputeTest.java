@@ -1,5 +1,6 @@
 package org.cis1200.test.engine;
 
+import org.cis1200.chess.engine.ChessBoard;
 import org.cis1200.chess.engine.MoveGenerationPrecompute;
 import org.junit.jupiter.api.Test;
 
@@ -153,5 +154,12 @@ public class MoveGenerationPrecomputeTest {
         actualMask = MoveGenerationPrecompute.blackPawnAttackMasks[9];
         expectedMask = 0b00000000_00000000_10100000_00000000_00000000_00000000_00000000_00000000L;
         assertEquals(expectedMask, actualMask, "Pawn mask for pos 9 is incorrect.");
+    }
+
+    @Test
+    public void testMagicSlidingAttack() {
+        ChessBoard board = new ChessBoard();
+        long result = tables.getSlidingMagicAttack(63, board.orBitBoardArray(board.whiteBitBoards) | board.orBitBoardArray(board.blackBitBoards), 2);
+        printBitBoard(result);
     }
 }

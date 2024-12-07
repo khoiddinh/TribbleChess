@@ -7,7 +7,8 @@ package org.cis1200.chess.GUI;
  */
 
 import org.cis1200.chess.engine.ChessBoard;
-
+import org.cis1200.chess.engine.MoveGenerationPrecompute;
+import org.cis1200.chess.engine.MoveGenerationPrecompute.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -149,6 +150,7 @@ public class GameBoard extends JPanel {
                         long startTime = System.currentTimeMillis();
                         int aiMove = aiEngine.getBestMove(board);
                         long endTime = System.currentTimeMillis();
+                        board.printBinary(aiMove);
                         board.makeMove(aiMove);
                         moveList.add(aiMove);
                         possibleNextMoves = board.getLegalPossibleMoves();
@@ -157,7 +159,7 @@ public class GameBoard extends JPanel {
                         System.out.println("Nodes Searched: " + aiEngine.nodesSearched);
                         System.out.println("Time Searched (ms): " + (endTime-startTime));
                         System.out.println("Nodes per Second: " + (((float) aiEngine.nodesSearched) / ((float) (endTime-startTime))) * 1000.0);
-
+                        System.out.println("Pruned: " + aiEngine.pruneAmount);
                         aiEngine.nodesSearched = 0;
                         // don't have to reset posSelected because I already did above
                     }
