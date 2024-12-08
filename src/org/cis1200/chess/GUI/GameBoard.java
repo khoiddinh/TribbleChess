@@ -7,6 +7,7 @@ package org.cis1200.chess.GUI;
  */
 
 import org.cis1200.chess.engine.ChessBoard;
+import org.cis1200.chess.engine.ChessEngine2;
 import org.cis1200.chess.engine.MoveGenerationPrecompute;
 import org.cis1200.chess.engine.MoveGenerationPrecompute.*;
 import java.awt.*;
@@ -65,7 +66,7 @@ public class GameBoard extends JPanel {
     private int posSelected;
 
     private static final boolean isAIPlayingBlack = true;
-    private static final ChessEngine aiEngine = new ChessEngine();
+    private static final ChessEngine2 aiEngine = new ChessEngine2();
     private ArrayList<Integer> moveList;
     /**
      * Initializes the game board.
@@ -134,6 +135,11 @@ public class GameBoard extends JPanel {
                     moveList.add(possibleNextMoves.get(moveIndex)); // TODO: DEBUG REMOVE
                     System.out.println(moveList.toString());
                     possibleNextMoves = board.getLegalPossibleMoves();
+                    for (int move : possibleNextMoves) {
+                        board.makeMove(move);
+                        //System.out.println(board.visualizeBoard());
+                        board.undoLastMove();
+                    }
                     possibleNextMovePairs = board.getMovePairs();
                     System.out.println(Arrays.deepToString(possibleNextMovePairs));
                     boardState = board.getBoardArray();
@@ -145,7 +151,7 @@ public class GameBoard extends JPanel {
 
                 SwingUtilities.invokeLater(() -> {
                     // if AI is playing get best move
-                    if (isAIPlayingBlack && !board.isWhiteTurn()) {
+                    if (isAIPlayingBlack && !board.isWhiteTurn() && board.checkWinner(possibleNextMoves) == 0) {
                         status.setText("AI is thinking...");
                         long startTime = System.currentTimeMillis();
                         int aiMove = aiEngine.getBestMove(board);
@@ -214,6 +220,10 @@ public class GameBoard extends JPanel {
     public void reset() {
         board.reset();
         status.setText("White to Move");
+        boardState = board.getBoardArray();
+        possibleNextMoves = board.getLegalPossibleMoves();
+        possibleNextMovePairs = board.getMovePairs();
+
         repaint();
 
         // Makes sure this component has keyboard/mouse focus

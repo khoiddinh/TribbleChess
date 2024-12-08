@@ -227,9 +227,6 @@ public class ChessEngine {
 
     }
     private int compareMove(Integer move1, Integer move2) {
-        if (move1 == 0b11111111111111111111111111111111 || move2 == 0b11111111111111111111111111111111) {
-            String s = "";
-        }
         return scoreMove(move2) - scoreMove(move1);
     }
 

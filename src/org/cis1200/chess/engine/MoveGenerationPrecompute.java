@@ -217,7 +217,6 @@ public class MoveGenerationPrecompute {
 
     public long generateWhitePawnAttackMask(int square) {
         long bitBoard = startingBitBoards[square];
-        // TODO: implement promotion logic in getPossibleMoves
         if ((bitBoard & (TOP_MASK | BOTTOM_MASK)) != 0) {
             // if at first row, impossible
             return bitBoard; // if at final row, promote, no valid moves
@@ -244,14 +243,12 @@ public class MoveGenerationPrecompute {
 
     public long generateBlackPawnAttackMask(int square) {
         long bitBoard = startingBitBoards[square];
-        // TODO: implement promotion logic in getPossibleMoves
-        // TODO: have sanity check in get possible moves if pawn is in first row or smth
         if ((bitBoard & (BOTTOM_MASK | TOP_MASK)) != 0) {
             return bitBoard; // if at final row, promote, no valid moves
         }
         long mask = 0;
-        if ((bitBoard & LEFT_MASK) == 0) mask |= bitBoard >>> 9; // if not on left edge
-        if ((bitBoard & RIGHT_MASK) == 0) mask |= bitBoard >>> 7; // if not on right edge
+        if ((bitBoard & LEFT_MASK) == 0) mask |= bitBoard >>> 7; // if not on left edge
+        if ((bitBoard & RIGHT_MASK) == 0) mask |= bitBoard >>> 9; // if not on right edge
         return mask;
     }
 
@@ -383,6 +380,7 @@ public class MoveGenerationPrecompute {
         } while (subset != 0);
         return blockerCombinations;
     }
+
     private long findRookMagicNumber(int pos, ArrayList<Long> blockerCombos) {
         long magic = 0;
         boolean foundMagic = false;

@@ -1,5 +1,6 @@
 package org.cis1200.chess.engine;
 
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Stack;
@@ -83,10 +84,6 @@ public class ChessBoard {
         };
         isWhiteTurn = true;
         moveStack = new Stack<Integer>();
-    }
-
-    public ChessBoard(String fen) {
-
     }
 
     // public access methods
@@ -180,7 +177,6 @@ public class ChessBoard {
                         throw new RuntimeException("Two Pieces found at the same square");
                     }
                     symbolAtPos = symbol;
-
                 }
                 bitboards[i] = bitboard << 1; // left shift bitboard regardless of if there is a piece
             }
@@ -307,18 +303,12 @@ public class ChessBoard {
                 moveMask = kingAttackMasks[pos];
                 break;
             case 1: // queen
-                /*
-                moveMask = getSlidingAttackWithBlockers(
-                        pos, blockerBitBoard, 1);
-                 */
                 moveMask = precompute.getSlidingMagicAttack(pos, blockerBitBoard, 1);
                 break;
             case 2: // rook
-                // moveMask = getSlidingAttackWithBlockers(pos, blockerBitBoard, 2);
                 moveMask = precompute.getSlidingMagicAttack(pos, blockerBitBoard, 2);
                 break;
             case 3: // bishop
-                //moveMask = getSlidingAttackWithBlockers(pos, blockerBitBoard, 3);
                 moveMask = precompute.getSlidingMagicAttack(pos, blockerBitBoard, 3);
                 break;
             case 4: // knight
@@ -328,10 +318,22 @@ public class ChessBoard {
                 // returns both moves and attacks
                 // does not handle enPassant (handled in getPossibleLegalMoves)
                 if (isWhiteTurn) {
-                    moveMask = whitePawnMoveMasks[pos];
+                    if ((whitePawnMoveMasks[pos] & opponentBitBoard) == 0) { // no overlap in opponent piece
+                        // can double push potentially
+                        moveMask = whitePawnMoveMasks[pos]; // only can go there if opponent not there
+                    } else { // check single move
+                        // get rid of any second row moves or if there is an opponent there do nothing
+                        moveMask = whitePawnMoveMasks[pos] & ~opponentBitBoard & ~(BOTTOM_SIDE_BOARD << 24);
+                    }
                     moveMask |= (whitePawnAttackMasks[pos] & opponentBitBoard); // only can go there if takes
                 } else { // black pawn moves
-                    moveMask = blackPawnMoveMasks[pos];
+                    if ((blackPawnMoveMasks[pos] & opponentBitBoard) == 0) { // no overlap in opponent piece
+                        // can double push potentially
+                        moveMask = blackPawnMoveMasks[pos]; // only can go there if opponent not there
+                    } else { // check single move
+                        // get rid of any second row moves or if there is an opponent there do nothing
+                        moveMask = blackPawnMoveMasks[pos] & ~opponentBitBoard & ~(TOP_SIDE_BOARD >>> 24);
+                    }
                     moveMask |= (blackPawnAttackMasks[pos] & opponentBitBoard);
                 }
                 break;
@@ -363,10 +365,19 @@ public class ChessBoard {
                     break;
                 case 5: // pawn
                     if (isWhiteTurn && ((startingBitBoards[pos] & TOP_MASK) == 0)) { // not on top row
-                        potentialAttacks[piece] =
-                                startingBitBoards[pos-9] | startingBitBoards[pos-7]; // up left and up right
+                        if ((startingBitBoards[pos] & LEFT_MASK) == 0) { // not on left side
+                            potentialAttacks[piece] |= startingBitBoards[pos-9];
+                        }
+                        if ((startingBitBoards[pos] & RIGHT_MASK) == 0) { // not on right side
+                            potentialAttacks[piece] |= startingBitBoards[pos-7];
+                        }
                     } else if (!isWhiteTurn && (((startingBitBoards[pos] & BOTTOM_MASK) == 0))) {                         // not on bottom row;
-                        potentialAttacks[piece] = startingBitBoards[pos+7] | startingBitBoards[pos+9];
+                        if (((startingBitBoards[pos] & LEFT_MASK) == 0)) { // not on left side
+                            potentialAttacks[piece] |= startingBitBoards[pos + 7];
+                        }
+                        if (((startingBitBoards[pos] & RIGHT_MASK) == 0)) { // not on right side
+                            potentialAttacks[piece] |= startingBitBoards[pos + 9];
+                        }
                     }
                     break;
             }
@@ -424,6 +435,11 @@ public class ChessBoard {
             long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
             long friendlyBitBoard = orBitBoardArray(friendlyBitBoardList);
             long opponentBitBoard = orBitBoardArray(opponentBitBoardList);
+            if (bitBoardList[0] == 0) {
+                for (long bitBoard : bitBoardList) {
+                    printBitBoard(bitBoard);
+                }
+            }
             if (isKingInCheck(bitBoardList[0], friendlyBitBoard, opponentBitBoard)) { // legal
                 moves.remove(i);
             }
@@ -778,8 +794,46 @@ public class ChessBoard {
         whiteCanRightCastle = ((castleState & (1 << 3)) >>> 3) == 1;
     }
 
-    // TODO: implement
     public void reset() {
+        // DEFAULT BOARD POSITION
+        // bitboard is defined top right to bottom right: 100000000 -> 100 \n 000 \n 000 if 3x3
+        final long whiteKingBoard = 0x8;
+        final long blackKingBoard = 0x0800000000000000L;
+        final long whiteQueenBoard = 0x10;
+        final long blackQueenBoard = 0x1000000000000000L;
+        final long whiteRookBoard = 0x81;
+        final long blackRookBoard = 0x8100000000000000L;
+        final long whiteKnightBoard = 0x42;
+        final long blackKnightBoard = 0x4200000000000000L;
+        final long whiteBishopBoard = 0x24;
+        final long blackBishopBoard = 0x2400000000000000L;
+        final long whitePawnBoard = 0xFF00; // 0xFF -> 0xFF00 (each 0 adds 16 (2^4) to move up one row is 16*16 or 00)
+        final long blackPawnBoard = 0xFF000000000000L;
 
+        // CASTLING DEFAULTS
+        whiteCanRightCastle = true;
+        whiteCanLeftCastle = true;
+        blackCanRightCastle = true;
+        blackCanLeftCastle = true;
+
+        whiteBitBoards = new long[]{
+                whiteKingBoard,
+                whiteQueenBoard,
+                whiteRookBoard,
+                whiteBishopBoard,
+                whiteKnightBoard,
+                whitePawnBoard
+        };
+
+        blackBitBoards = new long[]{
+                blackKingBoard,
+                blackQueenBoard,
+                blackRookBoard,
+                blackBishopBoard,
+                blackKnightBoard,
+                blackPawnBoard
+        };
+        isWhiteTurn = true;
+        moveStack = new Stack<Integer>();
     }
 }
