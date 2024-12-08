@@ -1,8 +1,10 @@
 package org.cis1200.chess.engine;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Random;
+
+import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfLeastSigBit;
+import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfMostSigBit;
 
 public class MoveGenerationPrecompute {
 
@@ -10,8 +12,6 @@ public class MoveGenerationPrecompute {
     public static final long RIGHT_MASK = 0x101010101010101L;
     public static final long TOP_MASK = 0xFF00000000000000L;
     public static final long BOTTOM_MASK = 0xFFL;
-
-    public static final long EDGE_MASK = LEFT_MASK | RIGHT_MASK | TOP_MASK | BOTTOM_MASK;
 
     public static long[] startingBitBoards;
 
@@ -23,12 +23,6 @@ public class MoveGenerationPrecompute {
 
     public static long[] blackPawnMoveMasks;
     public static long[] blackPawnAttackMasks;
-
-    // sliding pieces are implemented differently for magic bitboards
-    // the masks don't include edges since sliding pieces will
-    // always be able to attack them
-    // (unless there is a blocker in the way)
-    // TODO: Implement Magic BitBoards
 
     public static long[] rookAttackMasks;
     public static long[] bishopAttackMasks;
@@ -110,35 +104,6 @@ public class MoveGenerationPrecompute {
         BISHOP_ATTACK_TABLE = new long[64][]; // 64 * 2^9 (512)
         generateRookMagicBitBoards();
         generateBishopMagicBitBoards();
-    }
-
-    private static int getPosOfMostSigBit(long n) {
-        if (n == 0) return -1;
-        return Long.numberOfLeadingZeros(n);
-    }
-    private static int getPosOfLeastSigBit(long n) {
-        if (n == 0) return -1;
-        return 63-Long.numberOfTrailingZeros(n);
-    }
-
-    public static void printBitBoard(long val) {
-        String s = Long.toBinaryString(val);
-        StringBuilder r = new StringBuilder();
-        r.append("0".repeat(64 - s.length()));
-        for (int i = 0; i < s.length(); i++) {
-            r.append(s.charAt(i));
-        }
-        s = r.toString();
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < 64; i++) {
-            result.append(s.charAt(i));
-            if (((i + 1) % 8) == 0) {
-                result.append('\n');
-            }
-        }
-        System.out.println("-----");
-        System.out.println(result);
-        System.out.println("-----");
     }
 
     private long generateKingAttackMask(int square) {
@@ -300,7 +265,7 @@ public class MoveGenerationPrecompute {
                     bitBoard <<= RAY_DIRECTIONS[direction]; // shift to next pos
                 }
                 rayMask |= bitBoard; // add pos on the edge
-                rayMask ^= startingBitBoards[pos]; // TODO: test; since mask includes piece, remove it
+                rayMask ^= startingBitBoards[pos];
                 rayResult[direction][pos] = rayMask;
             }
         }

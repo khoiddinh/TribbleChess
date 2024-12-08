@@ -6,7 +6,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import static org.cis1200.chess.engine.MoveGenerationPrecompute.*;
+public class ChessEngine{
 
+}
+/*
 public class ChessEngine {
 
     private static HashMap<Integer, Integer> PIECE_TO_SCORE;
@@ -217,7 +220,7 @@ public class ChessEngine {
             score += -PIECE_TO_SCORE.get(piece);
         }
 
-         */
+
         if (castleMove) {
             score += castleDirection == 0 ? 10 : 8; // slightly prefer right castle
         }
@@ -355,12 +358,13 @@ public class ChessEngine {
                 }
             }
             if (bestMove == -1) {
-                System.out.println(board.visualizeBoard());
+                System.out.println(board);
                 System.out.println(moves);
                 System.out.println(board.getLegalPossibleMoves());
             }
             return new int[]{bestMove, bestScore};
         }
     }
-
 }
+
+*/

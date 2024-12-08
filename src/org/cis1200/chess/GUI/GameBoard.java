@@ -26,6 +26,7 @@ import static org.cis1200.chess.engine.ChessBoard.EMPTY_SQUARE;
 
 import org.cis1200.chess.engine.ChessEngine;
 import org.cis1200.chess.engine.ChessEngine.*;
+import org.cis1200.chess.engine.Move;
 /**
  * This class instantiates a TicTacToe object, which is the model for the game.
  * As the user clicks the game board, the model is updated. Whenever the model
@@ -62,12 +63,12 @@ public class GameBoard extends JPanel {
 
     private char[][] boardState;
     private int[][] possibleNextMovePairs; // pairs for checking if valid
-    private ArrayList<Integer> possibleNextMoves; // to actually move
+    private ArrayList<Move> possibleNextMoves; // to actually move
     private int posSelected;
 
     private static final boolean isAIPlayingBlack = true;
     private static final ChessEngine2 aiEngine = new ChessEngine2();
-    private ArrayList<Integer> moveList;
+    private ArrayList<Move> moveList;
     /**
      * Initializes the game board.
      */
@@ -131,15 +132,10 @@ public class GameBoard extends JPanel {
                 if (moveIndex != -1) {
                     board.makeMove(possibleNextMoves.get(moveIndex));
                     System.out.println("MOVE: " + possibleNextMoves.get(moveIndex));
-                    System.out.println(board.visualizeBoard());
+                    System.out.println(board);
                     moveList.add(possibleNextMoves.get(moveIndex)); // TODO: DEBUG REMOVE
                     System.out.println(moveList.toString());
                     possibleNextMoves = board.getLegalPossibleMoves();
-                    for (int move : possibleNextMoves) {
-                        board.makeMove(move);
-                        //System.out.println(board.visualizeBoard());
-                        board.undoLastMove();
-                    }
                     possibleNextMovePairs = board.getMovePairs();
                     System.out.println(Arrays.deepToString(possibleNextMovePairs));
                     boardState = board.getBoardArray();
@@ -154,9 +150,8 @@ public class GameBoard extends JPanel {
                     if (isAIPlayingBlack && !board.isWhiteTurn() && board.checkWinner(possibleNextMoves) == 0) {
                         status.setText("AI is thinking...");
                         long startTime = System.currentTimeMillis();
-                        int aiMove = aiEngine.getBestMove(board);
+                        Move aiMove = aiEngine.getBestMove(board);
                         long endTime = System.currentTimeMillis();
-                        board.printBinary(aiMove);
                         board.makeMove(aiMove);
                         moveList.add(aiMove);
                         possibleNextMoves = board.getLegalPossibleMoves();

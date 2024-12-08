@@ -2,10 +2,10 @@ package org.cis1200.chess.engine;
 import org.cis1200.chess.engine.ChessBoard;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import static org.cis1200.chess.engine.MoveGenerationPrecompute.*;
+import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfLeastSigBit;
+import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfMostSigBit;
 
 public class ChessEngine2 {
 
@@ -27,8 +27,8 @@ public class ChessEngine2 {
                     -32, -38, -39, -52, -54, -39, -39, -30,
                     -20, -33, -29, -42, -44, -29, -30, -19,
                     -10, -18, -17, -20, -22, -21, -20, -13,
-                    14,  18,  -10,  -10,   -14,  -10,  15,  14,
-                    21,  35,  -11,   6,   1,  -14,  32,  22},
+                    14,  18,  -40,  -40,   -44,  -10,  15,  14,
+                    21,  35,  -37,   6,   1,  -38,  32,  22},
             {-25,  -9, -11,  -3,  17, -13, -10, -17, // queen
                     -4,  -6,   4,  -5,  -1,   6,   4,  -5,
                     -8,  -5,   2,   0,   7,   6,  -4,  -5,
@@ -141,20 +141,6 @@ public class ChessEngine2 {
         }
     }
 
-    private HashMap<Long, TTEntry> transpositionTable = new HashMap<>();
-
-    // Killer moves and history heuristic
-    // We'll use a simplistic indexing. For a more robust approach, you'd need more context.
-    private int[][] historyTable = new int[6][64]; // pieceType x square indexing example (adjust as needed)
-    private int[][] killerMoves = new int[MAX_SEARCH_DEPTH][2]; // store two killer moves per depth
-
-    // Initialize killer moves to -1 (no move)
-    {
-        for (int d = 0; d < MAX_SEARCH_DEPTH; d++) {
-            killerMoves[d][0] = -1;
-            killerMoves[d][1] = -1;
-        }
-    }
     private static final int[][] WHITE_MATERIAL_WEIGHTS = {
             {20001, 888, 488, 319, 308, 89}, // opening material
             {19998, 853, 497, 331, 319, 96} // endgame material
@@ -164,9 +150,7 @@ public class ChessEngine2 {
             {20000, 845, 501, 334, 318, 102} // endgame material
     };
     public ChessEngine2() {
-
     }
-
 
     // game stage either 0 == opening, 1 = endgame (midGame is avg)
     int getGamePhaseScore(ChessBoard board) {
@@ -184,79 +168,42 @@ public class ChessEngine2 {
         return gamePhaseScore;
     }
     // MVV-LVA scoring for captures
-    // Higher victimVal and lower attackerVal means a bigger score
+    // higher victimVal and lower attackerVal means a bigger score
     private int mvvLvaScore(int attackerPiece, int victimPiece) {
         int attackerVal = WHITE_MATERIAL_WEIGHTS[0][attackerPiece];
         int victimVal = WHITE_MATERIAL_WEIGHTS[0][victimPiece];
         return (victimVal * 100) - attackerVal;
     }
 
-    private boolean isKillerMove(int move, int depth) {
-        if (depth < 0 || depth >= MAX_SEARCH_DEPTH) return false;
-        return move == killerMoves[depth][0] || move == killerMoves[depth][1];
-    }
-
-    // Extract move info (same method from your code)
-    private MoveInfo decodeMove(int move) {
-        MoveInfo mi = new MoveInfo();
-        mi.source = move & 0b111111;
-        mi.target = (move & (0b111111 << 6)) >>> 6;
-        mi.piece = (move & (0b111 << 12)) >>> 12;
-        mi.capture = ((move & (1 << 15)) >>> 15) == 1;
-        mi.pieceCaptured = (move & (0b111 << 16)) >>> 16;
-        mi.promotion = ((move & (1 << 19)) >>> 19) == 1;
-        mi.promotionPiece = (move & (0b11 << 20)) >>> 20;
-        mi.castleMove = ((move & (1 << 22)) >>> 22) == 1;
-        mi.castleDirection = (move & (1 << 23)) >>> 23;
-        mi.castleState = (move & (0b1111 << 24)) >>> 24;
-        mi.enPassant = ((move & (1 << 28)) >>> 28) == 1;
-        return mi;
-    }
-
-    private static class MoveInfo {
-        int source;
-        int target;
-        int piece;
-        boolean capture;
-        int pieceCaptured;
-        boolean promotion;
-        int promotionPiece;
-        boolean castleMove;
-        int castleDirection;
-        int castleState;
-        boolean enPassant;
-    }
-
     // Score move combining TT move, captures (MVV-LVA), killer, history
-    private int scoreMove(int move, int depth, boolean isWhiteTurn) {
-        MoveInfo mi = decodeMove(move);
+    private int scoreMove(Move move, int depth, boolean isWhiteTurn) {
         int score = 0;
-        if (mi.castleMove) {
+        if (move.isCastleMove) {
             score += 10000;
         }
 
         // captures via MVV-LVA
-        if (mi.capture) {
-            score += 50 * mvvLvaScore(mi.piece, mi.pieceCaptured);
-            if (WHITE_MATERIAL_WEIGHTS[0][mi.pieceCaptured] < WHITE_MATERIAL_WEIGHTS[0][mi.piece]) {
+        if (move.isCaptureMove) {
+            score += 50 * mvvLvaScore(move.piece, move.pieceCaptured);
+            if (WHITE_MATERIAL_WEIGHTS[0][move.pieceCaptured] < WHITE_MATERIAL_WEIGHTS[0][move.piece]) {
                 score /= 5;
             }
 
         }
 
         if (isWhiteTurn) {
-            score += 10 * PIECE_SQUARE_TABLE[mi.piece][mi.target];
+            score += 10 * PIECE_SQUARE_TABLE[move.piece][move.target];
         } else {
-            score += 10 * PIECE_SQUARE_TABLE[mi.piece][63-mi.target];
+            score += 10 * PIECE_SQUARE_TABLE[move.piece][63-move.target];
         }
         return score;
     }
 
     // Sort moves using our improved heuristic
-    private void orderMoves(ArrayList<Integer> moves, int depth, boolean isWhiteTurn) {
-        // Precompute scores
-        HashMap<Integer, Integer> scores = new HashMap<>();
-        for (int m : moves) {
+    private void orderMoves(ArrayList<Move> moves, int depth, boolean isWhiteTurn) {
+        // precompute scores because scoreMove can be time consuming
+        HashMap<Move, Integer> scores = new HashMap<>();
+        for (Move m : moves) {
             scores.put(m, scoreMove(m, depth, isWhiteTurn));
         }
         moves.sort((a, b) -> Integer.compare(scores.get(b), scores.get(a)));
@@ -283,7 +230,7 @@ public class ChessEngine2 {
             // white eval
             long pieceMask = board.whiteBitBoards[piece];
             while (pieceMask != 0) {
-                int pos = board.getPosOfLeastSigBit(pieceMask);
+                int pos = getPosOfLeastSigBit(pieceMask);
                 scoreOpening += WHITE_MATERIAL_WEIGHTS[0][piece];
                 scoreEndgame += WHITE_MATERIAL_WEIGHTS[1][piece];
                 scoreOpening += PIECE_SQUARE_TABLE[piece][pos];
@@ -293,7 +240,7 @@ public class ChessEngine2 {
             // black eval
             pieceMask = board.blackBitBoards[piece];
             while (pieceMask != 0) {
-                int pos = board.getPosOfLeastSigBit(pieceMask);
+                int pos = getPosOfLeastSigBit(pieceMask);
                 scoreOpening -= BLACK_MATERIAL_WEIGHTS[0][piece];
                 scoreEndgame -= BLACK_MATERIAL_WEIGHTS[1][piece];
 
@@ -318,9 +265,9 @@ public class ChessEngine2 {
 
     }
 
-    public int getBestMove(ChessBoard board) {
-        int[] result = negamax(board, 0, board.isWhiteTurn(), MIN, MAX);
-        return result[0];
+    public Move getBestMove(ChessBoard board) {
+        AIEvaluation result = negamax(board, 0, board.isWhiteTurn(), MIN, MAX);
+        return result.move;
     }
 
     /**
@@ -328,36 +275,36 @@ public class ChessEngine2 {
      * returns [bestMove, score].
      */
 
-    private int[] negamax(ChessBoard board, int depth, boolean isWhiteToMove, int alpha, int beta) {
+    private AIEvaluation negamax(ChessBoard board, int depth, boolean isWhiteToMove, int alpha, int beta) {
         nodesSearched++;
-        ArrayList<Integer> moves = board.getLegalPossibleMoves();
+        ArrayList<Move> moves = board.getLegalPossibleMoves();
         int gameState = board.checkWinner(moves);
         if (gameState == 1) { // white win
-            return new int[]{-1, MAX - depth};
+            return new AIEvaluation(null, MAX - depth); // - depth b/c pick the fastest way to win
         } else if (gameState == -1) { // black win
-            return new int[]{-1, MIN + depth};
+            return new AIEvaluation(null, MIN + depth);
         } else if (gameState == 2) { // draw
-            return new int[]{-1, 0};
+            return new AIEvaluation(null, 0);
         } else if (depth == MAX_SEARCH_DEPTH) {
-            return new int[]{-1, evalBoard(board, isWhiteToMove)};
+            return new AIEvaluation(null, evalBoard(board, isWhiteToMove));
         }
 
         if (moves.isEmpty()) {
-            // No moves
-            return new int[]{-1, evalBoard(board, isWhiteToMove)};
+            // no moves
+            return new AIEvaluation(null, evalBoard(board, isWhiteToMove));
         }
 
-        // Order moves with heuristics
+        // order moves with heuristics
         orderMoves(moves, depth, isWhiteToMove);
 
-        int bestMove = -1;
+        Move bestMove = null;
         int bestScore = MIN;
 
-        for (int move : moves) {
+        for (Move move : moves) {
             board.makeMove(move);
-            // Negamax formulation: flip perspective
-            int[] result = negamax(board, depth + 1, !isWhiteToMove, -beta, -alpha);
-            int score = -result[1];
+            // negamax: flip perspective
+            AIEvaluation result = negamax(board, depth + 1, !isWhiteToMove, -beta, -alpha);
+            int score = -result.score;
             board.undoLastMove();
 
             if (score > bestScore) {
@@ -367,11 +314,11 @@ public class ChessEngine2 {
                     pruneAmount++;
                     alpha = score;
                     if (alpha >= beta) {
-                        return new int[]{bestMove, bestScore};
+                        return new AIEvaluation(bestMove, bestScore);
                     }
                 }
             }
         }
-        return new int[]{bestMove, bestScore};
+        return new AIEvaluation(bestMove, bestScore);
     }
 }

@@ -4,6 +4,7 @@ import org.cis1200.chess.engine.ChessBoard;
 import org.cis1200.chess.engine.MoveGenerationPrecompute;
 import org.junit.jupiter.api.Test;
 
+import static org.cis1200.chess.engine.BitBoardFunctions.orBitBoardArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MoveGenerationPrecomputeTest {
@@ -159,7 +160,7 @@ public class MoveGenerationPrecomputeTest {
     @Test
     public void testMagicSlidingAttack() {
         ChessBoard board = new ChessBoard();
-        long result = tables.getSlidingMagicAttack(63, board.orBitBoardArray(board.whiteBitBoards) | board.orBitBoardArray(board.blackBitBoards), 2);
+        long result = tables.getSlidingMagicAttack(63, orBitBoardArray(board.whiteBitBoards) | orBitBoardArray(board.blackBitBoards), 2);
         printBitBoard(result);
     }
 }
