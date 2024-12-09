@@ -5,12 +5,16 @@ public class BitBoardFunctions {
     }
 
     public static int getPosOfMostSigBit(long n) {
-        if (n == 0) return -1;
+        if (n == 0) {
+            return - 1;
+        }
         return Long.numberOfLeadingZeros(n);
     }
     // gets the top left zero indexed position of least sig bit
     public static int getPosOfLeastSigBit(long n) {
-        if (n == 0) return -1;
+        if (n == 0) {
+            return - 1;
+        }
         return 63-Long.numberOfTrailingZeros(n);
     }
     // or operators all bitboards in array together

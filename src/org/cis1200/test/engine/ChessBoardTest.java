@@ -36,24 +36,24 @@ class ChessBoardTest {
     public void testMove() {
         ChessBoard chessBoard = new ChessBoard();
 
-        Move move = new Move(55, 55-8,
+        Move move = new Move(55, 55 - 8,
                 5, false, 0,
                 false, 0, false, true, new CastleState(), false);
-        assertEquals(move.source, 55);
-        assertEquals(move.target, 55-8);
-        assertEquals(move.piece, 5);
-        assertFalse(move.isCaptureMove);
-        assertEquals(move.pieceCaptured, 0);
-        assertFalse(move.isPromotionMove);
-        assertEquals(move.promotionPiece, 0);
-        assertFalse(move.isCastleMove);
-        assertTrue(move.rightCastleDirection);
+        assertEquals(move.getSource(), 55);
+        assertEquals(move.getTarget(), 55 - 8);
+        assertEquals(move.getPiece(), 5);
+        assertFalse(move.getIsCaptureMove());
+        assertEquals(move.getPieceCaptured(), 0);
+        assertFalse(move.getIsPromotionMove());
+        assertEquals(move.getPromotionPiece(), 0);
+        assertFalse(move.getIsCastleMove());
+        assertTrue(move.getRightCastleDirection());
         // test castle state
-        assertTrue(move.castleState.blackCanLeftCastle);
-        assertTrue(move.castleState.blackCanRightCastle);
-        assertTrue(move.castleState.whiteCanLeftCastle);
-        assertTrue(move.castleState.whiteCanRightCastle);
-        assertFalse(move.isEnPassantMove);
+        assertTrue(move.getCastleState().blackCanLeftCastle());
+        assertTrue(move.getCastleState().blackCanRightCastle());
+        assertTrue(move.getCastleState().whiteCanLeftCastle());
+        assertTrue(move.getCastleState().whiteCanRightCastle());
+        assertFalse(move.getIsEnPassantMove());
     }
     @Test
     public void testGetLegalMoves() {
@@ -108,24 +108,34 @@ class ChessBoardTest {
     public void testKingCheck() {
         ChessBoard board = new ChessBoard();
 
-        boolean actual = board.isSquareAttacked(60, orBitBoardArray(board.whiteBitBoards), orBitBoardArray(board.blackBitBoards));
+        boolean actual = board.isSquareAttacked(60,
+                orBitBoardArray(board.whiteBitBoards()), orBitBoardArray(board.blackBitBoards()));
         assertFalse(actual);
 
         board.makeMove(new Move(
-                51, 31, 5, false, 0, false, 0, false, false, new CastleState(), false
+                51, 31, 5,
+                false, 0,
+                false, 0, false,
+                false, new CastleState(), false
         ));
         board.makeMove(new Move(
-                12, 28, 5, false, 0, false, 0, false, false, new CastleState(), false
+                12, 28, 5,
+                false, 0, false, 0, false, false, new CastleState(), false
         ));
         board.makeMove(new Move(
-                62, 46, 4, false, 0, false, 0, false, false, new CastleState(), false
+                62, 46, 4,
+                false, 0, false, 0,
+                false, false, new CastleState(), false
         ));
 
         board.makeMove(new Move(
-                5, 33, 3, false, 0, false, 0, false, false, new CastleState(), false
+                5, 33, 3,
+                false, 0, false, 0,
+                false, false, new CastleState(), false
         ));
 
-        actual = board.isSquareAttacked(60, orBitBoardArray(board.blackBitBoards), orBitBoardArray(board.whiteBitBoards));
+        actual = board.isSquareAttacked(60,
+                orBitBoardArray(board.blackBitBoards()), orBitBoardArray(board.whiteBitBoards()));
         assertTrue(actual);
     }
 
@@ -133,17 +143,25 @@ class ChessBoardTest {
     public void testPin() { // edge case pinned knight can't move
         ChessBoard board = new ChessBoard();
         board.makeMove(new Move(
-                51, 31, 5, false, 0, false, 0, false, false, new CastleState(), false
+                51, 31, 5, false,
+                0, false, 0,
+                false, false, new CastleState(), false
         ));
         board.makeMove(new Move(
-                12, 28, 5, false, 0, false, 0, false, false, new CastleState(), false
+                12, 28, 5, false,
+                0, false, 0, false,
+                false, new CastleState(), false
         ));
         board.makeMove(new Move(
-                57, 42, 4, false, 0, false, 0, false, false, new CastleState(), false
+                57, 42, 4, false,
+                0, false, 0, false,
+                false, new CastleState(), false
         ));
 
         board.makeMove(new Move(
-                5, 33, 3, false, 0, false, 0, false, false, new CastleState(), false
+                5, 33, 3, false,
+                0, false, 0,
+                false, false, new CastleState(), false
         ));
         int[][] movePairs = board.getMovePairs();
         for (int[] move : movePairs) {

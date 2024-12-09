@@ -55,7 +55,7 @@ public class RunChess implements Runnable {
                                     "logic by using integer bit math instead of 2D arrays. \n" +
                                     "This means that all the pieces are stored as integers " +
                                     "and simply operated on to generate the moves. \n" +
-                                    "If you're interested, look through the source code, " +
+                                    "If you're interested, look through the source code. " +
                             "I think the math is really cool! \n"
                     ,
                     "Instructions & Description",
@@ -67,8 +67,9 @@ public class RunChess implements Runnable {
         // AI toggle button
         final JButton aiToggle = new JButton("AI Playing: On");
         aiToggle.addActionListener(e -> {
-            board.isAIPlayingBlack = !board.isAIPlayingBlack;  // toggle the state
-            aiToggle.setText(board.isAIPlayingBlack ? "AI Playing: On" : "AI Playing: Off");
+            board.toggleIsAIPlayingBlack();  // toggle the state
+            aiToggle.setText(board.getIsAIPlayingBlack()
+                    ? "AI Playing: On" : "AI Playing: Off");
         });
         control_panel.add(aiToggle);
 

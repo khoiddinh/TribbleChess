@@ -1,7 +1,5 @@
 package org.cis1200.chess.engine;
 
-import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Stack;
 import java.util.ArrayList;
@@ -13,7 +11,9 @@ import static org.cis1200.chess.engine.BitBoardFunctions.orBitBoardArray;
 
 public class ChessBoard {
     // BIT BOARD CONSTANTS
-    private static final long HEAD_INT = 0x8000000000000000L; // int that represents one at the 64th position
+
+    // int that represents one at the 64th position
+    private static final long HEAD_INT = 0x8000000000000000L;
     private static final long LEFT_SIDE_BOARD = 0x8080808080808080L;
     private static final long RIGHT_SIDE_BOARD = 0x101010101010101L;
     private static final long TOP_SIDE_BOARD = 0xFF00000000000000L;
@@ -41,31 +41,31 @@ public class ChessBoard {
     final long blackKnightBoard = 0x4200000000000000L;
     final long whiteBishopBoard = 0x24;
     final long blackBishopBoard = 0x2400000000000000L;
-    final long whitePawnBoard = 0xFF00; // 0xFF -> 0xFF00 (each 0 adds 16 (2^4) to move up one row is 16*16 or 00)
+    final long whitePawnBoard = 0xFF00; // 0xFF -> 0xFF00
+    // (each 0 adds 16 (2^4) to move up one row is 16*16 or 00)
     final long blackPawnBoard = 0xFF000000000000L;
 
-    public long[] whiteBitBoards = new long[]{
-            whiteKingBoard,
-            whiteQueenBoard,
-            whiteRookBoard,
-            whiteBishopBoard,
-            whiteKnightBoard,
-            whitePawnBoard
+    private long[] whiteBitBoards = new long[]{
+        whiteKingBoard,
+        whiteQueenBoard,
+        whiteRookBoard,
+        whiteBishopBoard,
+        whiteKnightBoard,
+        whitePawnBoard
     };
-    public long[] blackBitBoards = new long[]{
-            blackKingBoard,
-            blackQueenBoard,
-            blackRookBoard,
-            blackBishopBoard,
-            blackKnightBoard,
-            blackPawnBoard
+    private long[] blackBitBoards = new long[]{
+        blackKingBoard,
+        blackQueenBoard,
+        blackRookBoard,
+        blackBishopBoard,
+        blackKnightBoard,
+        blackPawnBoard
     };
     private boolean isWhiteTurn = true;
     private CastleState castleState = new CastleState();
-    public Stack<Move> moveStack = new Stack<>();
+    private Stack<Move> moveStack = new Stack<>();
 
-
-    private static final MoveGenerationPrecompute precompute = new MoveGenerationPrecompute();
+    private static final MoveGenerationPrecompute PRECOMPUTE = new MoveGenerationPrecompute();
 
 
     public ChessBoard() {
@@ -75,7 +75,13 @@ public class ChessBoard {
     public boolean isWhiteTurn() {
         return isWhiteTurn;
     }
+    public long[] whiteBitBoards() {
+        return whiteBitBoards;
+    }
 
+    public long[] blackBitBoards() {
+        return blackBitBoards;
+    }
     // -1 = black win, 0 = no winner, 1 = white win, 2 = draw
     public int checkWinner(ArrayList<Move> moves) {
         long whitePieces = orBitBoardArray(whiteBitBoards);
@@ -103,7 +109,7 @@ public class ChessBoard {
                 char[] whitePieceMap = new char[]{'K', 'Q', 'R','B','N','P'};
                 for (int piece = 0; piece < 6; piece++) {
                     // check if piece is at this pos
-                    if ((whiteBitBoards[piece] & startingBitBoards[row*8+col]) != 0) {
+                    if ((whiteBitBoards[piece] & startingBitBoards[row * 8 + col]) != 0) {
                         returnBoard[row][col] = whitePieceMap[piece];
                         break;
                     }
@@ -111,7 +117,7 @@ public class ChessBoard {
                 char[] blackPieceMap = new char[]{'k', 'q', 'r', 'b', 'n', 'p'};
                 for (int piece = 0; piece < 6; piece++) {
                     // check if piece is at this pos
-                    if ((blackBitBoards[piece] & startingBitBoards[row*8+col]) != 0) {
+                    if ((blackBitBoards[piece] & startingBitBoards[row * 8 + col]) != 0) {
                         returnBoard[row][col] = blackPieceMap[piece];
                         break;
                     }
@@ -127,7 +133,7 @@ public class ChessBoard {
         int[][] movePairs = new int[moves.size()][];
         for (int i = 0; i < moves.size(); i++) {
             Move move = moves.get(i);
-            movePairs[i] = new int[]{move.source, move.target};
+            movePairs[i] = new int[]{move.getSource(), move.getTarget()};
         }
         return movePairs;
     }
@@ -147,13 +153,13 @@ public class ChessBoard {
                 moveMask = kingAttackMasks[pos];
                 break;
             case 1: // queen
-                moveMask = precompute.getSlidingMagicAttack(pos, blockerBitBoard, 1);
+                moveMask = PRECOMPUTE.getSlidingMagicAttack(pos, blockerBitBoard, 1);
                 break;
             case 2: // rook
-                moveMask = precompute.getSlidingMagicAttack(pos, blockerBitBoard, 2);
+                moveMask = PRECOMPUTE.getSlidingMagicAttack(pos, blockerBitBoard, 2);
                 break;
             case 3: // bishop
-                moveMask = precompute.getSlidingMagicAttack(pos, blockerBitBoard, 3);
+                moveMask = PRECOMPUTE.getSlidingMagicAttack(pos, blockerBitBoard, 3);
                 break;
             case 4: // knight
                 moveMask = knightAttackMasks[pos];
@@ -162,25 +168,35 @@ public class ChessBoard {
                 // returns both moves and attacks
                 // does not handle enPassant (handled in getPossibleLegalMoves)
                 if (isWhiteTurn) {
-                    if ((whitePawnMoveMasks[pos] & blockerBitBoard) == 0) { // no overlap in opponent piece
+                    if ((whitePawnMoveMasks[pos] & blockerBitBoard) == 0) {
                         // can double push potentially
-                        moveMask = whitePawnMoveMasks[pos]; // only can go there if opponent not there
+                        moveMask = whitePawnMoveMasks[pos]; // only can go
+                        // there if opponent not there
                     } else { // check single move
-                        // get rid of any second row moves or if there is an opponent there do nothing
-                        moveMask = whitePawnMoveMasks[pos] & ~blockerBitBoard & ~(BOTTOM_SIDE_BOARD << 24);
+                        // get rid of any second row moves
+                        // or if there is an opponent there do nothing
+                        moveMask = whitePawnMoveMasks[pos]
+                                & ~blockerBitBoard & ~(BOTTOM_SIDE_BOARD << 24);
                     }
-                    moveMask |= (whitePawnAttackMasks[pos] & blockerBitBoard); // only can go there if takes
+                    moveMask |= (whitePawnAttackMasks[pos]
+                            & blockerBitBoard); // only can go there if takes
                 } else { // black pawn moves
-                    if ((blackPawnMoveMasks[pos] & blockerBitBoard) == 0) { // no overlap in opponent piece
+                    if ((blackPawnMoveMasks[pos]
+                            & blockerBitBoard) == 0) { // no overlap in opponent piece
                         // can double push potentially
-                        moveMask = blackPawnMoveMasks[pos]; // only can go there if opponent not there
+                        moveMask = blackPawnMoveMasks[pos]; // only can go there
+                        // if opponent not there
                     } else { // check single move
-                        // get rid of any second row moves or if there is an opponent there do nothing
-                        moveMask = blackPawnMoveMasks[pos] & ~blockerBitBoard & ~(TOP_SIDE_BOARD >>> 24);
+                        // get rid of any second row moves or if there is an
+                        // opponent there do nothing
+                        moveMask = blackPawnMoveMasks[pos] & ~blockerBitBoard
+                                & ~(TOP_SIDE_BOARD >>> 24);
                     }
                     moveMask |= (blackPawnAttackMasks[pos] & opponentBitBoard);
                 }
                 break;
+            default:
+                throw new RuntimeException("invalid piece");
         }
         moveMask ^= (moveMask & friendlyBitBoard);
         return moveMask;
@@ -199,35 +215,43 @@ public class ChessBoard {
                 case 1: // queen
                 case 2: // rook
                 case 3: // bishop
-                    // potentialAttacks[piece] = getSlidingAttackWithBlockers(pos, blockerBitBoard, piece);
-                    potentialAttacks[piece] = precompute.getSlidingMagicAttack(pos, blockerBitBoard, piece);
+                    potentialAttacks[piece] =
+                            PRECOMPUTE.getSlidingMagicAttack(pos, blockerBitBoard, piece);
                     break;
                 case 4: // knight
                     potentialAttacks[piece] = knightAttackMasks[pos];
                     break;
                 case 5: // pawn
-                    if (isWhiteTurn && ((startingBitBoards[pos] & TOP_MASK) == 0)) { // not on top row
-                        if ((startingBitBoards[pos] & LEFT_MASK) == 0) { // not on left side
-                            potentialAttacks[piece] |= startingBitBoards[pos-9];
+                    if (isWhiteTurn && ((startingBitBoards[pos]
+                            & TOP_MASK) == 0)) { // not on top row
+                        if ((startingBitBoards[pos]
+                                & LEFT_MASK) == 0) { // not on left side
+                            potentialAttacks[piece] |= startingBitBoards[pos - 9];
                         }
                         if ((startingBitBoards[pos] & RIGHT_MASK) == 0) { // not on right side
-                            potentialAttacks[piece] |= startingBitBoards[pos-7];
+                            potentialAttacks[piece] |= startingBitBoards[pos - 7];
                         }
-                    } else if (!isWhiteTurn && (((startingBitBoards[pos] & BOTTOM_MASK) == 0))) {                         // not on bottom row;
-                        if (((startingBitBoards[pos] & LEFT_MASK) == 0)) { // not on left side
+                    } else if (!isWhiteTurn && (((startingBitBoards[pos]
+                            & BOTTOM_MASK) == 0))) {  // not on bottom row;
+                        if (((startingBitBoards[pos]
+                                & LEFT_MASK) == 0)) { // not on left side
                             potentialAttacks[piece] |= startingBitBoards[pos + 7];
                         }
-                        if (((startingBitBoards[pos] & RIGHT_MASK) == 0)) { // not on right side
+                        if (((startingBitBoards[pos]
+                                & RIGHT_MASK) == 0)) { // not on right side
                             potentialAttacks[piece] |= startingBitBoards[pos + 9];
                         }
                     }
                     break;
+                default:
+                    throw new RuntimeException("piece invalid");
             }
         }
         long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
         for (int piece = 0; piece < 6; piece++) {
             // check if each piece is on the attack directions to pos
-            if ((opponentBitBoardList[piece] & potentialAttacks[piece]) != 0) { // piece attacking that square
+            if ((opponentBitBoardList[piece]
+                    & potentialAttacks[piece]) != 0) { // piece attacking that square
                 return true;
             }
         }
@@ -235,7 +259,8 @@ public class ChessBoard {
     }
 
     // gets if king is currently in check (includes but doesn't distinguish mate)
-    public boolean isKingInCheck(long kingBitBoard, long friendlyBitBoard, long opponentBitBoard) {
+    public boolean isKingInCheck(long kingBitBoard,
+                                 long friendlyBitBoard, long opponentBitBoard) {
         int kingPos = getPosOfLeastSigBit(kingBitBoard);
         return isSquareAttacked(kingPos, friendlyBitBoard, opponentBitBoard);
     }
@@ -263,7 +288,8 @@ public class ChessBoard {
             long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
             long friendlyBitBoard = orBitBoardArray(friendlyBitBoardList);
             long opponentBitBoard = orBitBoardArray(opponentBitBoardList);
-            if (isKingInCheck(bitBoardList[0], friendlyBitBoard, opponentBitBoard)) { // legal
+            if (isKingInCheck(bitBoardList[0],
+                    friendlyBitBoard, opponentBitBoard)) { // legal
                 moves.remove(i);
             }
             switchTurn(); // switch turn back
@@ -293,7 +319,7 @@ public class ChessBoard {
                 // add king castling
                 if (piece == 0) {
                     // check if white can right castle
-                    if (isWhiteTurn && castleState.whiteCanRightCastle &&
+                    if (isWhiteTurn && castleState.whiteCanRightCastle() &&
                             ((blockerBitBoard & WHITE_RIGHT_CASTLE_MASK) == 0) &&
                             !isSquareAttacked(60, friendlyBitBoard, opposingBitBoard) && // can't castle in check
                             !isSquareAttacked(61, friendlyBitBoard, opposingBitBoard) &&
@@ -306,7 +332,7 @@ public class ChessBoard {
                         );
                     }
                     // check if white can left castle
-                    if (isWhiteTurn && castleState.whiteCanLeftCastle &&
+                    if (isWhiteTurn && castleState.whiteCanLeftCastle() &&
                             ((blockerBitBoard & WHITE_LEFT_CASTLE_MASK) == 0) &&
                             !isSquareAttacked(60, friendlyBitBoard, opposingBitBoard) &&
                             !isSquareAttacked(59, friendlyBitBoard, opposingBitBoard) &&
@@ -319,7 +345,7 @@ public class ChessBoard {
                         );
                     }
                     // check if black can right castle
-                    if (!isWhiteTurn && castleState.blackCanRightCastle &&
+                    if (!isWhiteTurn && castleState.blackCanRightCastle() &&
                             ((blockerBitBoard & BLACK_RIGHT_CASTLE_MASK) == 0) &&
                             !isSquareAttacked(4, friendlyBitBoard, opposingBitBoard) &&
                             !isSquareAttacked(5, friendlyBitBoard, opposingBitBoard) &&
@@ -332,7 +358,7 @@ public class ChessBoard {
                         );
                     }
                     // check if black can left castle
-                    if (!isWhiteTurn && castleState.blackCanLeftCastle &&
+                    if (!isWhiteTurn && castleState.blackCanLeftCastle() &&
                             ((blockerBitBoard & BLACK_LEFT_CASTLE_MASK) == 0) &&
                             !isSquareAttacked(4, friendlyBitBoard, opposingBitBoard) &&
                             !isSquareAttacked(3, friendlyBitBoard, opposingBitBoard) &&
@@ -352,27 +378,33 @@ public class ChessBoard {
                 if (piece == 5) {
                     if (!moveStack.isEmpty()) {
                         Move prevMove = moveStack.peek();
-                        if (prevMove.piece == 5 &&
-                                (Math.abs(prevMove.source-prevMove.target) == 16)) { // if pawn and two square move
-                            if (((startingBitBoards[pos] & LEFT_SIDE_BOARD) == 0)) { // if pawn not on left edge
+                        if (prevMove.getPiece() == 5 &&
+                                (Math.abs(prevMove.getSource()
+                                        - prevMove.getTarget()) == 16)) { // if pawn and two square move
+                            if (((startingBitBoards[pos]
+                                    & LEFT_SIDE_BOARD) == 0)) { // if pawn not on left edge
                                 // calculate left side enPassant
-                                if (pos-1 == prevMove.target) { // if prev move directly left of curr pawn pos
+                                if (pos - 1 == prevMove.getTarget())
+                                { // if prev move directly left of curr pawn pos
                                     possibleMoves.add(
-                                            new Move(pos, isWhiteTurn ? pos-9 : pos + 7, 5,
+                                            new Move(pos, isWhiteTurn ? pos - 9 : pos + 7, 5,
                                             true, 5,
                                             false, 0,
                                             false, true, castleState.copy(),
                                             true));
                                 }
                             }
-                            if (((startingBitBoards[pos] & RIGHT_SIDE_BOARD) == 0)) { // if pawn not on right edge
+                            if (((startingBitBoards[pos]
+                                    & RIGHT_SIDE_BOARD) == 0)) { // if pawn not on right edge
                                 // calculate right side enPassant
-                                if (pos+1 == prevMove.target) { // if prev move directly left of curr pawn pos
+                                if (pos+1 == prevMove.getTarget())
+                                { // if prev move directly left of curr pawn pos
                                     possibleMoves.add(
-                                            new Move(pos, isWhiteTurn ? pos-7 : pos + 9, 5,
+                                            new Move(pos, isWhiteTurn ? pos - 7 : pos + 9, 5,
                                             true, 5,
                                             false, 0,
-                                            false, true, castleState.copy(),
+                                            false,
+                                                    true, castleState.copy(),
                                             true));
                                 }
                             }
@@ -388,15 +420,18 @@ public class ChessBoard {
                     boolean isCaptureMove = (startingBitBoards[targetPos] & opposingBitBoard) != 0;
                     int capturedPiece = 0;
                     if (isCaptureMove) { // if capturing a piece, find the piece we're capturing
-                        capturedPiece = findPieceAtPos(targetPos, !isWhiteTurn); // if white turn, find black piece
+                        capturedPiece =
+                                findPieceAtPos(targetPos, !isWhiteTurn); // if white turn, find black piece
                     }
 
                     // pawn promotion logic to add promotion flag along with non queen promotions
                     // capture flag even in the case of promotion is already handled in the above block
                     boolean isPromotion = false;
                     if (piece == 5) {
-                        if (isWhiteTurn && ((startingBitBoards[targetPos] & TOP_MASK) != 0)) { // white promotion
-                            for (int promotionPiece = 1; promotionPiece < 4; promotionPiece++) { // queen added by default
+                        if (isWhiteTurn
+                                && ((startingBitBoards[targetPos] & TOP_MASK) != 0)) { // white promotion
+                            for (int promotionPiece = 1;
+                                 promotionPiece < 4; promotionPiece++) { // queen added by default
                                 possibleMoves.add(
                                         new Move(pos, targetPos, piece,
                                         isCaptureMove, capturedPiece,
@@ -407,8 +442,10 @@ public class ChessBoard {
                             }
                             isPromotion = true;
                         }
-                        else if (!isWhiteTurn && ((startingBitBoards[targetPos] & BOTTOM_MASK) != 0)) { // black promotion
-                            for (int promotionPiece = 1; promotionPiece < 4; promotionPiece++) { // queen added by default
+                        else if (!isWhiteTurn &&
+                                ((startingBitBoards[targetPos] & BOTTOM_MASK) != 0)) { // black promotion
+                            for (int promotionPiece = 1;
+                                 promotionPiece < 4; promotionPiece++) { // queen added by default
                                 possibleMoves.add(
                                         new Move(pos, targetPos, piece,
                                         isCaptureMove, capturedPiece,
@@ -421,8 +458,11 @@ public class ChessBoard {
                     }
 
                     // king can't move into check functionality
-                    if (!(piece == 0 && isSquareAttacked(targetPos, friendlyBitBoard, opposingBitBoard)) &&
-                            !(piece == 5 && isCaptureMove && ((Math.abs(targetPos-pos) % 8) == 0))) { // pawn can't capture on same column
+                    if (!(piece == 0
+                            && isSquareAttacked(targetPos, friendlyBitBoard, opposingBitBoard)) &&
+                            !(piece == 5 && isCaptureMove
+                                    && ((Math.abs(targetPos - pos) % 8) == 0)))
+                    { // pawn can't capture on same column
 
                         // if promotion, queen added by default, block above adds rest
                         possibleMoves.add(
@@ -445,33 +485,33 @@ public class ChessBoard {
 
     // plays move, updates bitboards, and switches turn
     // assumes valid move
-    // TODO: UNIT TESTS
     public void makeMove(Move move) {
-
-
         long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
         long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
         // remove piece at source location
-        bitBoardList[move.piece] ^= startingBitBoards[move.source];
+        bitBoardList[move.getPiece()] ^= startingBitBoards[move.getSource()];
         // add at new target location
-        bitBoardList[move.piece] |= startingBitBoards[move.target];
+        bitBoardList[move.getPiece()] |= startingBitBoards[move.getTarget()];
         // if capture move, update the capture bitboard in opponent bitboard
-        if (move.isCaptureMove && !move.isEnPassantMove) { // don't handle enPassant b/c target isn't loc of enemy pawn
-            opponentBitBoardList[move.pieceCaptured] ^= startingBitBoards[move.target]; // remove captured piece
+        if (move.getIsCaptureMove()
+                && !move.getIsEnPassantMove()) { // don't handle enPassant b/c target isn't loc of enemy pawn
+            opponentBitBoardList[move.getPieceCaptured()]
+                    ^= startingBitBoards[move.getTarget()]; // remove captured piece
         }
-        if (move.isEnPassantMove) {
+        if (move.getIsEnPassantMove()) {
             // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
             opponentBitBoardList[5] ^=
-                    startingBitBoards[isWhiteTurn ? move.target + 8 : move.target - 8];
+                    startingBitBoards[isWhiteTurn ? move.getTarget() + 8 : move.getTarget() - 8];
         }
         // if promotion, replace the pawn (that we already moved) with the promoted piece
-        if (move.isPromotionMove) {
-            bitBoardList[move.piece] ^= startingBitBoards[move.target]; // remove pawn
-            bitBoardList[move.promotionPiece] |= startingBitBoards[move.target]; // replace with promoted piece
+        if (move.getIsPromotionMove()) {
+            bitBoardList[move.getPiece()] ^= startingBitBoards[move.getTarget()]; // remove pawn
+            bitBoardList[move.getPromotionPiece()]
+                    |= startingBitBoards[move.getTarget()]; // replace with promoted piece
         }
         // if castleMove, move the rook since we already moved the king above
-        if (move.isCastleMove) {
-            if (move.rightCastleDirection) { // right castle
+        if (move.getIsCastleMove()) {
+            if (move.getRightCastleDirection()) { // right castle
                 bitBoardList[2] ^= startingBitBoards[isWhiteTurn ? 63 : 7];
                 bitBoardList[2] |= startingBitBoards[isWhiteTurn ? 61 : 5];
             } else { // left castle
@@ -480,42 +520,44 @@ public class ChessBoard {
             }
             // update the castle fields
             if (isWhiteTurn) {
-                castleState.whiteCanLeftCastle = false;
-                castleState.whiteCanRightCastle = false;
+                castleState.setWhiteLeftCastle(false);
+                castleState.setWhiteRightCastle(false);
             } else { // black
-                castleState.blackCanLeftCastle = false;
-                castleState.blackCanRightCastle = false;
+                castleState.setWhiteLeftCastle(false);
+                castleState.setBlackRightCastle(false);
             }
         }
 
         // if move isn't a castle but could affect castle state
         // (if you move the king or rook)
-        if ((move.piece == 0 || move.piece == 2) && !move.isCastleMove) {
-            switch (move.piece) {
+        if ((move.getPiece() == 0 || move.getPiece() == 2) && !move.getIsCastleMove()) {
+            switch (move.getPiece()) {
                 case 0: // king
                     if (isWhiteTurn) { // if king moves, castle not valid
-                        castleState.whiteCanLeftCastle = false;
-                        castleState.whiteCanRightCastle = false;
+                        castleState.setWhiteLeftCastle(false);
+                        castleState.setWhiteRightCastle(false);
                     } else {
-                        castleState.blackCanLeftCastle = false;
-                        castleState.blackCanRightCastle = false;
+                        castleState.setBlackLeftCastle(false);
+                        castleState.setBlackRightCastle(false);
                     }
                     break;
                 case 2: // rook
                     if (isWhiteTurn) {
-                        if (move.source == 63) { // white right rook
-                            castleState.whiteCanRightCastle = false;
-                        } else if (move.source == 56) { // white left rook
-                            castleState.whiteCanLeftCastle = false;
+                        if (move.getSource() == 63) { // white right rook
+                            castleState.setWhiteRightCastle(false);
+                        } else if (move.getSource() == 56) { // white left rook
+                            castleState.setWhiteLeftCastle(false);
                         }
                     } else { // black turn
-                        if (move.source == 7) { // black right rook
-                            castleState.blackCanRightCastle = false;
-                        } else if (move.source == 0) { // black left rook
-                            castleState.blackCanLeftCastle = false;
+                        if (move.getSource() == 7) { // black right rook
+                            castleState.setBlackRightCastle(false);
+                        } else if (move.getSource() == 0) { // black left rook
+                            castleState.setBlackLeftCastle(false);
                         }
                     }
                     break;
+                default:
+                    throw new RuntimeException("Piece invalid");
             }
         }
 
@@ -533,27 +575,31 @@ public class ChessBoard {
         long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
         long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
         // if promotion, remove promoted piece from target
-        if (move.isPromotionMove) {
-            bitBoardList[move.promotionPiece] ^= startingBitBoards[move.target];
+        if (move.getIsPromotionMove()) {
+            bitBoardList[move.getPromotionPiece()] ^= startingBitBoards[move.getTarget()];
         } else { // otherwise
             // remove piece from target
-            bitBoardList[move.piece] ^= startingBitBoards[move.target];
+            bitBoardList[move.getPiece()] ^= startingBitBoards[move.getTarget()];
         }
         // add it back to the original place
-        bitBoardList[move.piece] |= startingBitBoards[move.source];
+        bitBoardList[move.getPiece()] |= startingBitBoards[move.getSource()];
         // if captured, add the enemy piece back to its spot
-        if (move.isCaptureMove && !move.isEnPassantMove) { // don't consider enPassant, handle replace below in the enPassant block
-            opponentBitBoardList[move.pieceCaptured] |= startingBitBoards[move.target];
+        if (move.getIsCaptureMove()
+                && !move.getIsEnPassantMove()) {
+            // don't consider enPassant, handle replace below in the enPassant block
+            opponentBitBoardList[move.getPieceCaptured()]
+                    |= startingBitBoards[move.getTarget()];
         }
         // put the captured pawn back, already moved capturing pawn back
-        if (move.isEnPassantMove) {
+        if (move.getIsEnPassantMove()) {
             // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
-            opponentBitBoardList[5] |= startingBitBoards[isWhiteTurn ? move.target + 8 : move.target - 8];
+            opponentBitBoardList[5]
+                    |= startingBitBoards[isWhiteTurn ? move.getTarget() + 8 : move.getTarget() - 8];
         }
 
         // if castle, move rook back and fix castle fields
-        if (move.isCastleMove) {
-            if (move.rightCastleDirection) { // right castle
+        if (move.getIsCastleMove()) {
+            if (move.getRightCastleDirection()) { // right castle
                 bitBoardList[2] ^= startingBitBoards[isWhiteTurn ? 61 : 5];
                 bitBoardList[2] |= startingBitBoards[isWhiteTurn ? 63 : 7];
             } else { // left castle
@@ -564,7 +610,7 @@ public class ChessBoard {
         }
         // fix the castle fields (regardless of if castle move
         // since could be rook or king move that changed it last move)
-        castleState = move.castleState.copy();
+        castleState = move.getCastleState().copy();
     }
 
     public void reset() {
@@ -587,21 +633,21 @@ public class ChessBoard {
         castleState = new CastleState();
 
         whiteBitBoards = new long[]{
-                whiteKingBoard,
-                whiteQueenBoard,
-                whiteRookBoard,
-                whiteBishopBoard,
-                whiteKnightBoard,
-                whitePawnBoard
+            whiteKingBoard,
+            whiteQueenBoard,
+            whiteRookBoard,
+            whiteBishopBoard,
+            whiteKnightBoard,
+            whitePawnBoard
         };
 
         blackBitBoards = new long[]{
-                blackKingBoard,
-                blackQueenBoard,
-                blackRookBoard,
-                blackBishopBoard,
-                blackKnightBoard,
-                blackPawnBoard
+            blackKingBoard,
+            blackQueenBoard,
+            blackRookBoard,
+            blackBishopBoard,
+            blackKnightBoard,
+            blackPawnBoard
         };
         isWhiteTurn = true;
         moveStack = new Stack<Move>();
@@ -611,20 +657,20 @@ public class ChessBoard {
     @Override
     public String toString() {
         long[] bitboards = {
-                whiteBitBoards[0], blackBitBoards[0],
-                whiteBitBoards[1], blackBitBoards[1],
-                whiteBitBoards[2], blackBitBoards[2],
-                whiteBitBoards[3], blackBitBoards[3],
-                whiteBitBoards[4], blackBitBoards[4],
-                whiteBitBoards[5], blackBitBoards[5]
+            whiteBitBoards[0], blackBitBoards[0],
+            whiteBitBoards[1], blackBitBoards[1],
+            whiteBitBoards[2], blackBitBoards[2],
+            whiteBitBoards[3], blackBitBoards[3],
+            whiteBitBoards[4], blackBitBoards[4],
+            whiteBitBoards[5], blackBitBoards[5]
         };
         char[] symbols = {
-                'K', 'k', // White King, Black King
-                'Q', 'q', // White Queen, Black Queen
-                'R', 'r', // White Rook, Black Rook
-                'B', 'b', // White Bishop, Black Bishop
-                'N', 'n', // White Knight, Black Knight
-                'P', 'p'  // White Pawn, Black Pawn
+            'K', 'k', // White King, Black King
+            'Q', 'q', // White Queen, Black Queen
+            'R', 'r', // White Rook, Black Rook
+            'B', 'b', // White Bishop, Black Bishop
+            'N', 'n', // White Knight, Black Knight
+            'P', 'p'  // White Pawn, Black Pawn
         };
         StringBuilder returnString = new StringBuilder();
         for (int piecePos = 0; piecePos < 64; piecePos++) { // loop over piece position in string
@@ -641,7 +687,7 @@ public class ChessBoard {
                 bitboards[i] = bitboard << 1; // left shift bitboard regardless of if there is a piece
             }
             returnString.append(symbolAtPos);
-            if ((piecePos+1)%8 == 0) { // append newline after every row
+            if ((piecePos + 1) % 8 == 0) { // append newline after every row
                 returnString.append('\n');
             }
             else {
@@ -661,20 +707,20 @@ public class ChessBoard {
         }
 
         long[] bitboards = {
-                whiteBitBoards[0], blackBitBoards[0],
-                whiteBitBoards[1], blackBitBoards[1],
-                whiteBitBoards[2], blackBitBoards[2],
-                whiteBitBoards[3], blackBitBoards[3],
-                whiteBitBoards[4], blackBitBoards[4],
-                whiteBitBoards[5], blackBitBoards[5]
+            whiteBitBoards[0], blackBitBoards[0],
+            whiteBitBoards[1], blackBitBoards[1],
+            whiteBitBoards[2], blackBitBoards[2],
+            whiteBitBoards[3], blackBitBoards[3],
+            whiteBitBoards[4], blackBitBoards[4],
+            whiteBitBoards[5], blackBitBoards[5]
         };
         char[] symbols = {
-                'K', 'k', // White King, Black King
-                'Q', 'q', // White Queen, Black Queen
-                'R', 'r', // White Rook, Black Rook
-                'B', 'b', // White Bishop, Black Bishop
-                'N', 'n', // White Knight, Black Knight
-                'P', 'p'  // White Pawn, Black Pawn
+            'K', 'k', // White King, Black King
+            'Q', 'q', // White Queen, Black Queen
+            'R', 'r', // White Rook, Black Rook
+            'B', 'b', // White Bishop, Black Bishop
+            'N', 'n', // White Knight, Black Knight
+            'P', 'p'  // White Pawn, Black Pawn
         };
         StringBuilder returnString = new StringBuilder();
         for (int piecePos = 0; piecePos < 64; piecePos++) { // loop over piece position in string
@@ -697,7 +743,7 @@ public class ChessBoard {
             }
 
             returnString.append(symbolAtPos);
-            if ((piecePos+1) % 8 == 0) { // append newline after every row
+            if ((piecePos + 1) % 8 == 0) { // append newline after every row
                 returnString.append('\n');
             }
             else {

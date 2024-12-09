@@ -50,20 +50,20 @@ public class GameBoard extends JPanel {
 
     // Game constants
     public static final int SQUARE_LENGTH = 70; // 100 pixels
-    public static final int BOARD_WIDTH = SQUARE_LENGTH*8; // 100 pixels per square
-    public static final int BOARD_HEIGHT = SQUARE_LENGTH*8;
+    public static final int BOARD_WIDTH = SQUARE_LENGTH * 8; // 100 pixels per square
+    public static final int BOARD_HEIGHT = SQUARE_LENGTH * 8;
 
     public static final String WHITE_TO_MOVE_STATUS = "White to move";
     public static final String BLACK_TO_MOVE_STATUS = "Black to move";
 
-    public static HashMap<Character, BufferedImage> PIECE_TO_IMAGE;
+    private static HashMap<Character, BufferedImage> PIECE_TO_IMAGE;
 
     public static final Color COLORED_SQUARE_COLOR = new Color(111,143,114);
     public static final Color LIGHT_SQUARE_COLOR = new Color(173,189,143);
     private int posSelected;
 
-    public boolean isAIPlayingBlack = true;
-    private static final ChessEngine aiEngine = new ChessEngine();
+    private boolean isAIPlayingBlack = true;
+    private static final ChessEngine AI_ENGINE = new ChessEngine();
 
     /**
      * Initializes the game board.
@@ -85,20 +85,44 @@ public class GameBoard extends JPanel {
         // initialize PIECE_TO_IMAGE
         try {
             // white pieces
-            PIECE_TO_IMAGE.put('K', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wk.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('Q', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wq.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('R', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wr.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('B', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wb.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('N', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wn.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('P', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wp.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('K', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/wk.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('Q', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/wq.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('R', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/wr.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('B', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/wb.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('N', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/wn.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('P', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/wp.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
 
             // black pieces
-            PIECE_TO_IMAGE.put('k', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bk.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('q', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bq.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('r', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/br.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('b', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bb.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('n', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bn.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('p', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bp.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('k', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/bk.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('q', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/bq.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('r', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/br.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('b', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/bb.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('n', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/bn.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('p', scaleImage(ImageIO.read(new File(
+                    "org/cis1200/chess/GUI/assets/bp.png")),
+                    SQUARE_LENGTH, SQUARE_LENGTH));
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -108,7 +132,6 @@ public class GameBoard extends JPanel {
          * Listens for mouseclicks. Updates the model, then updates the game
          * board based off of the updated model.
          */
-        // TODO: fix mouse listeners
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseReleased(MouseEvent e) {
@@ -133,14 +156,14 @@ public class GameBoard extends JPanel {
                     // if AI is playing get best move
                     if (isAIPlayingBlack && !board.isWhiteTurn() && board.checkWinner(board.getLegalPossibleMoves()) == 0) {
                         long startTime = System.currentTimeMillis();
-                        Move aiMove = aiEngine.getBestMove(board);
+                        Move aiMove = AI_ENGINE.getBestMove(board);
                         long endTime = System.currentTimeMillis();
                         board.makeMove(aiMove);
-                        System.out.println("Nodes Searched: " + aiEngine.nodesSearched);
+                        System.out.println("Nodes Searched: " + AI_ENGINE.getNodesSearched());
                         System.out.println("Time Searched (ms): " + (endTime-startTime));
-                        System.out.println("Nodes per Second: " + (((float) aiEngine.nodesSearched) / ((float) (endTime-startTime))) * 1000.0);
-                        System.out.println("Pruned: " + aiEngine.pruneAmount);
-                        aiEngine.nodesSearched = 0;
+                        System.out.println("Nodes per Second: " + (((float) AI_ENGINE.getNodesSearched()) / ((float) (endTime-startTime))) * 1000.0);
+                        System.out.println("Pruned: " + AI_ENGINE.getPruneAmount());
+                        AI_ENGINE.resetNodeSearchCount();
                         // don't have to reset posSelected because I already did above
                     }
                     updateStatus();
@@ -199,6 +222,14 @@ public class GameBoard extends JPanel {
             }
         }
         return -1;
+    }
+
+    public boolean getIsAIPlayingBlack() {
+        return isAIPlayingBlack;
+    }
+
+    public void toggleIsAIPlayingBlack() {
+        isAIPlayingBlack = !isAIPlayingBlack;
     }
     /**
      * (Re-)sets the game to its initial state.
