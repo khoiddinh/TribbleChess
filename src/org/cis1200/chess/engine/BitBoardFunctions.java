@@ -15,7 +15,7 @@ public class BitBoardFunctions {
         if (n == 0) {
             return - 1;
         }
-        return 63-Long.numberOfTrailingZeros(n);
+        return 63 - Long.numberOfTrailingZeros(n);
     }
     // or operators all bitboards in array together
     public static long orBitBoardArray(long[] bitBoards) {

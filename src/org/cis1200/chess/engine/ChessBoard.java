@@ -308,7 +308,8 @@ public class ChessBoard {
         ArrayList<Move> possibleMoves = new ArrayList<>();
 
         for (int piece = 0; piece < bitBoardList.length; piece++) { // loop over each piece bitboard
-            long pieceBitBoard = bitBoardList[piece]; // bitboard with just this piece (could be multiple pieces)
+            long pieceBitBoard =
+                    bitBoardList[piece]; // bitboard with just this piece (could be multiple pieces)
             while (pieceBitBoard != 0) {
                 // check piece bitBoardList[i] at pos for moves
                 int pos = getPosOfLeastSigBit(pieceBitBoard);
@@ -321,7 +322,8 @@ public class ChessBoard {
                     // check if white can right castle
                     if (isWhiteTurn && castleState.whiteCanRightCastle() &&
                             ((blockerBitBoard & WHITE_RIGHT_CASTLE_MASK) == 0) &&
-                            !isSquareAttacked(60, friendlyBitBoard, opposingBitBoard) && // can't castle in check
+                            !isSquareAttacked(60, friendlyBitBoard,
+                                    opposingBitBoard) && // can't castle in check
                             !isSquareAttacked(61, friendlyBitBoard, opposingBitBoard) &&
                             !isSquareAttacked(62, friendlyBitBoard, opposingBitBoard)) {
                         possibleMoves.add(
@@ -364,7 +366,7 @@ public class ChessBoard {
                             !isSquareAttacked(3, friendlyBitBoard, opposingBitBoard) &&
                             !isSquareAttacked(2, friendlyBitBoard, opposingBitBoard)) {
                         possibleMoves.add(
-                                new Move(4, 2,piece,
+                                new Move(4, 2, piece,
                                         false, 0,
                                         false, 0,
                                         true, false, castleState.copy(),
@@ -380,12 +382,13 @@ public class ChessBoard {
                         Move prevMove = moveStack.peek();
                         if (prevMove.getPiece() == 5 &&
                                 (Math.abs(prevMove.getSource()
-                                        - prevMove.getTarget()) == 16)) { // if pawn and two square move
+                                        - prevMove.getTarget())
+                                        == 16)) { // if pawn and two square move
                             if (((startingBitBoards[pos]
                                     & LEFT_SIDE_BOARD) == 0)) { // if pawn not on left edge
                                 // calculate left side enPassant
-                                if (pos - 1 == prevMove.getTarget())
-                                { // if prev move directly left of curr pawn pos
+                                if (pos - 1 == prevMove.getTarget()) {
+                                    // if prev move directly left of curr pawn pos
                                     possibleMoves.add(
                                             new Move(pos, isWhiteTurn ? pos - 9 : pos + 7, 5,
                                             true, 5,
@@ -397,8 +400,8 @@ public class ChessBoard {
                             if (((startingBitBoards[pos]
                                     & RIGHT_SIDE_BOARD) == 0)) { // if pawn not on right edge
                                 // calculate right side enPassant
-                                if (pos+1 == prevMove.getTarget())
-                                { // if prev move directly left of curr pawn pos
+                                if (pos + 1 == prevMove.getTarget()) {
+                                    // if prev move directly left of curr pawn pos
                                     possibleMoves.add(
                                             new Move(pos, isWhiteTurn ? pos - 7 : pos + 9, 5,
                                             true, 5,
@@ -417,11 +420,13 @@ public class ChessBoard {
                     int targetPos = getPosOfLeastSigBit(moveMask);
 
                     // capture logic
-                    boolean isCaptureMove = (startingBitBoards[targetPos] & opposingBitBoard) != 0;
+                    boolean isCaptureMove = (startingBitBoards[targetPos]
+                            & opposingBitBoard) != 0;
                     int capturedPiece = 0;
                     if (isCaptureMove) { // if capturing a piece, find the piece we're capturing
                         capturedPiece =
-                                findPieceAtPos(targetPos, !isWhiteTurn); // if white turn, find black piece
+                                findPieceAtPos(targetPos, !isWhiteTurn);
+                        // if white turn, find black piece
                     }
 
                     // pawn promotion logic to add promotion flag along with non queen promotions
@@ -429,8 +434,9 @@ public class ChessBoard {
                     boolean isPromotion = false;
                     if (piece == 5) {
                         if (isWhiteTurn
-                                && ((startingBitBoards[targetPos] & TOP_MASK) != 0)) { // white promotion
-                            for (int promotionPiece = 1;
+                                && ((startingBitBoards[targetPos]
+                                & TOP_MASK) != 0)) { // white promotion
+                            for (int promotionPiece = 2;
                                  promotionPiece < 4; promotionPiece++) { // queen added by default
                                 possibleMoves.add(
                                         new Move(pos, targetPos, piece,
@@ -443,14 +449,16 @@ public class ChessBoard {
                             isPromotion = true;
                         }
                         else if (!isWhiteTurn &&
-                                ((startingBitBoards[targetPos] & BOTTOM_MASK) != 0)) { // black promotion
-                            for (int promotionPiece = 1;
+                                ((startingBitBoards[targetPos]
+                                        & BOTTOM_MASK) != 0)) { // black promotion
+                            for (int promotionPiece = 2;
                                  promotionPiece < 4; promotionPiece++) { // queen added by default
                                 possibleMoves.add(
                                         new Move(pos, targetPos, piece,
                                         isCaptureMove, capturedPiece,
                                         true, promotionPiece,
-                                        false, true, castleState.copy(),
+                                        false,
+                                                true, castleState.copy(),
                                         false));
                             }
                             isPromotion = true;
@@ -459,24 +467,27 @@ public class ChessBoard {
 
                     // king can't move into check functionality
                     if (!(piece == 0
-                            && isSquareAttacked(targetPos, friendlyBitBoard, opposingBitBoard)) &&
+                            && isSquareAttacked(targetPos,
+                            friendlyBitBoard, opposingBitBoard)) &&
                             !(piece == 5 && isCaptureMove
-                                    && ((Math.abs(targetPos - pos) % 8) == 0)))
-                    { // pawn can't capture on same column
+                                    && ((Math.abs(targetPos - pos) % 8) == 0))) {
+                        // pawn can't capture on same column
 
                         // if promotion, queen added by default, block above adds rest
                         possibleMoves.add(
                                 new Move(pos, targetPos, piece,
                                 isCaptureMove, capturedPiece,
-                                isPromotion, 0,
+                                isPromotion, 1,
                                 false, true,
                                 castleState.copy(), false)
                         );
                     }
-                    moveMask ^= startingBitBoards[targetPos]; // remove this move from move mask
+                    moveMask ^= startingBitBoards[targetPos];
+                    // remove this move from move mask
                     // cont: (the moves that we still have to convert and encode)
                 }
-                pieceBitBoard ^= startingBitBoards[pos]; // remove piece from bitboard and process next
+                pieceBitBoard ^= startingBitBoards[pos];
+                // remove piece from bitboard and process next
             }
         }
         filterLegalMoves(possibleMoves);
@@ -494,7 +505,8 @@ public class ChessBoard {
         bitBoardList[move.getPiece()] |= startingBitBoards[move.getTarget()];
         // if capture move, update the capture bitboard in opponent bitboard
         if (move.getIsCaptureMove()
-                && !move.getIsEnPassantMove()) { // don't handle enPassant b/c target isn't loc of enemy pawn
+                && !move.getIsEnPassantMove()) {
+            // don't handle enPassant b/c target isn't loc of enemy pawn
             opponentBitBoardList[move.getPieceCaptured()]
                     ^= startingBitBoards[move.getTarget()]; // remove captured piece
         }
@@ -523,7 +535,7 @@ public class ChessBoard {
                 castleState.setWhiteLeftCastle(false);
                 castleState.setWhiteRightCastle(false);
             } else { // black
-                castleState.setWhiteLeftCastle(false);
+                castleState.setBlackLeftCastle(false);
                 castleState.setBlackRightCastle(false);
             }
         }
@@ -567,11 +579,13 @@ public class ChessBoard {
         // switch turn
         switchTurn();
     }
-
+    public Stack<Move> getMoveStack() {
+        return moveStack;
+    }
     public void undoLastMove() {
         Move move = moveStack.pop();
         switchTurn(); // switch turn first
-
+        int oldKingCount = Long.bitCount(blackBitBoards[0]);
         long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
         long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
         // if promotion, remove promoted piece from target
@@ -594,7 +608,8 @@ public class ChessBoard {
         if (move.getIsEnPassantMove()) {
             // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
             opponentBitBoardList[5]
-                    |= startingBitBoards[isWhiteTurn ? move.getTarget() + 8 : move.getTarget() - 8];
+                    |= startingBitBoards[isWhiteTurn ?
+                    move.getTarget() + 8 : move.getTarget() - 8];
         }
 
         // if castle, move rook back and fix castle fields
@@ -609,13 +624,14 @@ public class ChessBoard {
 
         }
         // fix the castle fields (regardless of if castle move
-        // since could be rook or king move that changed it last move)
+        // since could be a rook or king move that changed it last move)
         castleState = move.getCastleState().copy();
     }
 
     public void reset() {
         // DEFAULT BOARD POSITION
-        // bitboard is defined top right to bottom right: 100000000 -> 100 \n 000 \n 000 if 3x3
+        // bitboard is defined top right to
+        // bottom right: 100000000 -> 100 \n 000 \n 000 if 3x3
         final long whiteKingBoard = 0x8;
         final long blackKingBoard = 0x0800000000000000L;
         final long whiteQueenBoard = 0x10;
@@ -626,7 +642,8 @@ public class ChessBoard {
         final long blackKnightBoard = 0x4200000000000000L;
         final long whiteBishopBoard = 0x24;
         final long blackBishopBoard = 0x2400000000000000L;
-        final long whitePawnBoard = 0xFF00; // 0xFF -> 0xFF00 (each 0 adds 16 (2^4) to move up one row is 16*16 or 00)
+        final long whitePawnBoard = 0xFF00; // 0xFF -> 0xFF00
+        // (each 0 adds 16 (2^4) to move up one row is 16*16 or 00)
         final long blackPawnBoard = 0xFF000000000000L;
 
         // CASTLING DEFAULTS
@@ -689,8 +706,7 @@ public class ChessBoard {
             returnString.append(symbolAtPos);
             if ((piecePos + 1) % 8 == 0) { // append newline after every row
                 returnString.append('\n');
-            }
-            else {
+            } else {
                 returnString.append(" "); // if not an end row character add spacing for looks
             }
         }
@@ -745,8 +761,7 @@ public class ChessBoard {
             returnString.append(symbolAtPos);
             if ((piecePos + 1) % 8 == 0) { // append newline after every row
                 returnString.append('\n');
-            }
-            else {
+            } else {
                 returnString.append(" "); // if not an end row character add spacing for looks
             }
         }

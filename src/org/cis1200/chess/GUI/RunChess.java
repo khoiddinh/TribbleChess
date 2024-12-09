@@ -73,6 +73,12 @@ public class RunChess implements Runnable {
         });
         control_panel.add(aiToggle);
 
+        final JButton undo = new JButton("Undo");
+        undo.addActionListener(e -> {
+            board.undo();
+        });
+        // control_panel.add(undo);
+
         // Put the frame on the screen
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

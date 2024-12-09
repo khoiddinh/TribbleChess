@@ -137,8 +137,8 @@ public class GameBoard extends JPanel {
             public void mouseReleased(MouseEvent e) {
                 Point p = e.getPoint();
                 int pos = getClickPos(p);
-                System.out.println(posSelected);
-                System.out.println(pos);
+                // System.out.println(posSelected);
+                // System.out.println(pos);
                 if (posSelected == -1) return; // short circuit
                 int moveIndex = getValidMoveIndex(posSelected, pos);
                 if (moveIndex != -1) {
@@ -231,6 +231,7 @@ public class GameBoard extends JPanel {
     public void toggleIsAIPlayingBlack() {
         isAIPlayingBlack = !isAIPlayingBlack;
     }
+
     /**
      * (Re-)sets the game to its initial state.
      */
@@ -243,7 +244,21 @@ public class GameBoard extends JPanel {
         // Makes sure this component has keyboard/mouse focus
         requestFocusInWindow();
     }
+    public void undo() {
+        if (board.getMoveStack().isEmpty()) {
+            return; // if empty do nothing
+        }
+        board.undoLastMove();
+        if (board.isWhiteTurn()) {
+            status.setText(WHITE_TO_MOVE_STATUS);
+        } else {
+            status.setText(BLACK_TO_MOVE_STATUS);
+        }
 
+        repaint();
+
+        requestFocusInWindow();
+    }
     /**
      * Updates the JLabel to reflect the current state of the game.
      */
@@ -299,10 +314,12 @@ public class GameBoard extends JPanel {
 
                 if ((row+col) % 2 == 1) { // even row odd col OR odd row even col
                     g.setColor(COLORED_SQUARE_COLOR);
-                    g.fillRect( col * SQUARE_LENGTH, row * SQUARE_LENGTH, SQUARE_LENGTH, SQUARE_LENGTH);
+                    g.fillRect( col * SQUARE_LENGTH, row * SQUARE_LENGTH,
+                            SQUARE_LENGTH, SQUARE_LENGTH);
                 } else {
                     g.setColor(LIGHT_SQUARE_COLOR);
-                    g.fillRect( col * SQUARE_LENGTH, row * SQUARE_LENGTH, SQUARE_LENGTH, SQUARE_LENGTH);
+                    g.fillRect(col * SQUARE_LENGTH, row * SQUARE_LENGTH,
+                            SQUARE_LENGTH, SQUARE_LENGTH);
                 }
                 if (pieceAtPos != EMPTY_SQUARE) { // if piece at pos, draw it
                     g.drawImage(PIECE_TO_IMAGE.get(pieceAtPos),

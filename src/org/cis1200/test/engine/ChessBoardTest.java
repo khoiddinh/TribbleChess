@@ -138,6 +138,9 @@ class ChessBoardTest {
                 orBitBoardArray(board.blackBitBoards()), orBitBoardArray(board.whiteBitBoards()));
         assertTrue(actual);
     }
+    @Test
+    public void testCastle() {
+    }
 
     @Test
     public void testPin() { // edge case pinned knight can't move

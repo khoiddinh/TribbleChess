@@ -52,7 +52,8 @@ public class CastleState {
     }
 
     public CastleState copy() {
-        return new CastleState(whiteCanRightCastle, whiteCanLeftCastle, blackCanRightCastle, blackCanLeftCastle);
+        return new CastleState(whiteCanRightCastle, whiteCanLeftCastle,
+                blackCanRightCastle, blackCanLeftCastle);
     }
 
     @Override
