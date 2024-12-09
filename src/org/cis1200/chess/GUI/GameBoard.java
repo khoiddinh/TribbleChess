@@ -65,7 +65,7 @@ public class GameBoard extends JPanel {
     private ArrayList<Integer> possibleNextMoves; // to actually move
     private int posSelected;
 
-    private static final boolean isAIPlayingBlack = true;
+    private static final boolean isAIPlayingBlack = false;
     private static final ChessEngine2 aiEngine = new ChessEngine2();
     private ArrayList<Integer> moveList;
     /**
