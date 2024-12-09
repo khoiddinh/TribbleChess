@@ -9,7 +9,6 @@ import static org.cis1200.chess.engine.BitBoardFunctions.orBitBoardArray;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO: FIX TESTS
 class ChessBoardTest {
 
     @Test

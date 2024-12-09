@@ -17,8 +17,9 @@ public class ChessEngine {
 
     private static final int OPENING_PHASE_THRESHOLD = 5900;
     private static final int ENDGAME_PHASE_THRESHOLD = 500;
-    private static final int MATERIAL_SCALING = 1;
+    private static int MATERIAL_SCALING = 1;
 
+    //
     private static final int[][] PIECE_SQUARE_TABLE = {
             {-30, -40, -40, -50, -50, -40, -40, -30, // king
                     -30, -37, -43, -49, -50, -39, -40, -30,
@@ -261,7 +262,7 @@ public class ChessEngine {
         else if (gamePhase == 0) { // opening
             score = scoreOpening;
         } else { // endgame
-            score = scoreOpening; //scoreEndgame;
+            score = scoreEndgame;
         }
         return isWhiteToMove ? score : - score;
 

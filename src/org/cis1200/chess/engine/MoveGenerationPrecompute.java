@@ -48,9 +48,6 @@ public class MoveGenerationPrecompute {
     private static long[] BISHOP_MAGICS;
     private static long[] ROOK_MAGICS;
 
-    private static final int ROOK_SHIFT = 52;
-    private static final int BISHOP_SHIFT = 55;
-
     public MoveGenerationPrecompute() {
         startingBitBoards = new long[64];
         for (int i = 0; i < 64; i++) {

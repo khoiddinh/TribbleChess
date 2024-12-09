@@ -20,6 +20,9 @@ import java.util.HashMap;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
+import java.awt.image.AffineTransformOp;
+import java.awt.geom.AffineTransform;
+
 import static org.cis1200.chess.engine.ChessBoard.EMPTY_SQUARE;
 
 import org.cis1200.chess.engine.Move;
@@ -46,7 +49,7 @@ public class GameBoard extends JPanel {
     private JLabel status; // current status text
 
     // Game constants
-    public static final int SQUARE_LENGTH = 60; // 100 pixels
+    public static final int SQUARE_LENGTH = 70; // 100 pixels
     public static final int BOARD_WIDTH = SQUARE_LENGTH*8; // 100 pixels per square
     public static final int BOARD_HEIGHT = SQUARE_LENGTH*8;
 
@@ -82,20 +85,20 @@ public class GameBoard extends JPanel {
         // initialize PIECE_TO_IMAGE
         try {
             // white pieces
-            PIECE_TO_IMAGE.put('K', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_klt60.png")));
-            PIECE_TO_IMAGE.put('Q', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_qlt60.png")));
-            PIECE_TO_IMAGE.put('R', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_rlt60.png")));
-            PIECE_TO_IMAGE.put('B', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_blt60.png")));
-            PIECE_TO_IMAGE.put('N', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_nlt60.png")));
-            PIECE_TO_IMAGE.put('P', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_plt60.png")));
+            PIECE_TO_IMAGE.put('K', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wk.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('Q', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wq.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('R', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wr.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('B', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wb.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('N', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wn.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('P', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wp.png")), SQUARE_LENGTH, SQUARE_LENGTH));
 
             // black pieces
-            PIECE_TO_IMAGE.put('k', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_kdt60.png")));
-            PIECE_TO_IMAGE.put('q', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_qdt60.png")));
-            PIECE_TO_IMAGE.put('r', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_rdt60.png")));
-            PIECE_TO_IMAGE.put('b', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_bdt60.png")));
-            PIECE_TO_IMAGE.put('n', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_ndt60.png")));
-            PIECE_TO_IMAGE.put('p', ImageIO.read(new File("org/cis1200/chess/GUI/assets/Chess_pdt60.png")));
+            PIECE_TO_IMAGE.put('k', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bk.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('q', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bq.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('r', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/br.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('b', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bb.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('n', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bn.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('p', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bp.png")), SQUARE_LENGTH, SQUARE_LENGTH));
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -163,6 +166,15 @@ public class GameBoard extends JPanel {
                 }
             }
         });
+    }
+    private static BufferedImage scaleImage(BufferedImage originalImage, int width, int height) {
+        BufferedImage scaledImage = new BufferedImage(width, height, originalImage.getType());
+        AffineTransform at = AffineTransform.getScaleInstance(
+                (double) width / originalImage.getWidth(),
+                (double) height / originalImage.getHeight()
+        );
+        AffineTransformOp scaleOp = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+        return scaleOp.filter(originalImage, scaledImage);
     }
 
     // takes in position of click and returns the pos of square clicked (top left index = 0)

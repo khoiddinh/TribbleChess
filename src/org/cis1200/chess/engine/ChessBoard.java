@@ -186,7 +186,6 @@ public class ChessBoard {
         return moveMask;
     }
 
-    // TODO: UNIT TESTS
     public boolean isSquareAttacked(int pos, long friendly, long opponentBitBoard) {
         long blockerBitBoard = friendly | opponentBitBoard;
 
