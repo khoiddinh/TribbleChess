@@ -318,21 +318,21 @@ public class ChessBoard {
                 // returns both moves and attacks
                 // does not handle enPassant (handled in getPossibleLegalMoves)
                 if (isWhiteTurn) {
-                    if ((whitePawnMoveMasks[pos] & opponentBitBoard) == 0) { // no overlap in opponent piece
+                    if ((whitePawnMoveMasks[pos] & blockerBitBoard) == 0) { // no overlap in opponent piece
                         // can double push potentially
                         moveMask = whitePawnMoveMasks[pos]; // only can go there if opponent not there
                     } else { // check single move
-                        // get rid of any second row moves or if there is an opponent there do nothing
-                        moveMask = whitePawnMoveMasks[pos] & ~opponentBitBoard & ~(BOTTOM_SIDE_BOARD << 24);
+                        // get rid of any second row moves or if there is a piece there do nothing
+                        moveMask = whitePawnMoveMasks[pos] & ~blockerBitBoard & ~(BOTTOM_SIDE_BOARD << 24);
                     }
-                    moveMask |= (whitePawnAttackMasks[pos] & opponentBitBoard); // only can go there if takes
+                    moveMask |= (whitePawnAttackMasks[pos] & blockerBitBoard); // only can go there if takes
                 } else { // black pawn moves
-                    if ((blackPawnMoveMasks[pos] & opponentBitBoard) == 0) { // no overlap in opponent piece
+                    if ((blackPawnMoveMasks[pos] & blockerBitBoard) == 0) { // no overlap in opponent piece
                         // can double push potentially
                         moveMask = blackPawnMoveMasks[pos]; // only can go there if opponent not there
                     } else { // check single move
                         // get rid of any second row moves or if there is an opponent there do nothing
-                        moveMask = blackPawnMoveMasks[pos] & ~opponentBitBoard & ~(TOP_SIDE_BOARD >>> 24);
+                        moveMask = blackPawnMoveMasks[pos] & ~blockerBitBoard & ~(TOP_SIDE_BOARD >>> 24);
                     }
                     moveMask |= (blackPawnAttackMasks[pos] & opponentBitBoard);
                 }
@@ -599,7 +599,7 @@ public class ChessBoard {
                             isPromotion = true;
                         }
                         else if (!isWhiteTurn && ((startingBitBoards[targetPos] & BOTTOM_MASK) != 0)) { // black promotion
-                            for (int promotionPiece = 1; promotionPiece < 4; promotionPiece++) { // queen added by default
+                            for (int promotionPiece = 2; promotionPiece < 4; promotionPiece++) { // queen added by default
                                 int move = encodeMove(pos, targetPos, piece,
                                         isCaptureMove, capturedPiece,
                                         true, promotionPiece,
@@ -618,7 +618,7 @@ public class ChessBoard {
                         // if promotion, queen added by default, block above adds rest
                         int move = encodeMove(pos, targetPos, piece,
                                 isCaptureMove, capturedPiece,
-                                isPromotion, 0,
+                                isPromotion, 1,
                                 false, 0,
                                 encodeCastleState(), false);
                         possibleMoves.add(move);

@@ -120,41 +120,7 @@ public class ChessEngine2 {
             -2,   5,   6,  -6,   0,   3,   4,  -4,
             0,   0,   0,   0,   0,   0,   0,   0}
     };
-    // Transposition table types
-    private static final int TT_EXACT = 0;
-    private static final int TT_ALPHA = 1;
-    private static final int TT_BETA  = 2;
 
-    // Transposition table entry
-    private static class TTEntry {
-        long key;
-        int depth;
-        int flag;
-        int score;
-        int bestMove;
-        TTEntry(long key, int depth, int flag, int score, int bestMove) {
-            this.key = key;
-            this.depth = depth;
-            this.flag = flag;
-            this.score = score;
-            this.bestMove = bestMove;
-        }
-    }
-
-    private HashMap<Long, TTEntry> transpositionTable = new HashMap<>();
-
-    // Killer moves and history heuristic
-    // We'll use a simplistic indexing. For a more robust approach, you'd need more context.
-    private int[][] historyTable = new int[6][64]; // pieceType x square indexing example (adjust as needed)
-    private int[][] killerMoves = new int[MAX_SEARCH_DEPTH][2]; // store two killer moves per depth
-
-    // Initialize killer moves to -1 (no move)
-    {
-        for (int d = 0; d < MAX_SEARCH_DEPTH; d++) {
-            killerMoves[d][0] = -1;
-            killerMoves[d][1] = -1;
-        }
-    }
     private static final int[][] WHITE_MATERIAL_WEIGHTS = {
             {20001, 888, 488, 319, 308, 89}, // opening material
             {19998, 853, 497, 331, 319, 96} // endgame material
@@ -191,10 +157,6 @@ public class ChessEngine2 {
         return (victimVal * 100) - attackerVal;
     }
 
-    private boolean isKillerMove(int move, int depth) {
-        if (depth < 0 || depth >= MAX_SEARCH_DEPTH) return false;
-        return move == killerMoves[depth][0] || move == killerMoves[depth][1];
-    }
 
     // Extract move info (same method from your code)
     private MoveInfo decodeMove(int move) {
