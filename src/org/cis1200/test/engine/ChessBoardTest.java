@@ -1,14 +1,16 @@
 package org.cis1200.test.engine;
+import org.cis1200.chess.engine.CastleState;
 import org.cis1200.chess.engine.ChessBoard;
 
+import org.cis1200.chess.engine.Move;
 import org.junit.jupiter.api.*;
+import static org.cis1200.chess.engine.BitBoardFunctions.orBitBoardArray;
 
-import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
 class ChessBoardTest {
+
     @Test
     public void testVisualizeBoard() {
         ChessBoard chessBoard = new ChessBoard();
@@ -26,20 +28,32 @@ class ChessBoardTest {
                         R N B Q K B N R
                         """;
 
-        String actualBoard = chessBoard.visualizeBoard();
+        String actualBoard = chessBoard.toString();
         System.out.println("Starting Board: \n" + actualBoard);
         assertEquals(expectedBoard, actualBoard, "The chessboard visualization is incorrect");
     }
     @Test
-    public void testEncodeMove() {
+    public void testMove() {
         ChessBoard chessBoard = new ChessBoard();
 
-        int actual = chessBoard.encodeMove(55, 55-8,
+        Move move = new Move(55, 55-8,
                 5, false, 0,
-                false, 0, false, 0, 0, false);
-        int expected = 0b0_0_0_0_0_0_0_0_101_101111_110111;
-        System.out.println(Integer.toBinaryString(actual));
-        assertEquals(expected, actual);
+                false, 0, false, true, new CastleState(), false);
+        assertEquals(move.source, 55);
+        assertEquals(move.target, 55-8);
+        assertEquals(move.piece, 5);
+        assertFalse(move.isCaptureMove);
+        assertEquals(move.pieceCaptured, 0);
+        assertFalse(move.isPromotionMove);
+        assertEquals(move.promotionPiece, 0);
+        assertFalse(move.isCastleMove);
+        assertTrue(move.rightCastleDirection);
+        // test castle state
+        assertTrue(move.castleState.blackCanLeftCastle);
+        assertTrue(move.castleState.blackCanRightCastle);
+        assertTrue(move.castleState.whiteCanLeftCastle);
+        assertTrue(move.castleState.whiteCanRightCastle);
+        assertFalse(move.isEnPassantMove);
     }
     @Test
     public void testGetLegalMoves() {
@@ -94,33 +108,48 @@ class ChessBoardTest {
     public void testKingCheck() {
         ChessBoard board = new ChessBoard();
 
-        boolean actual = board.isSquareAttacked(60, board.orBitBoardArray(board.whiteBitBoards), board.orBitBoardArray(board.blackBitBoards));
+        boolean actual = board.isSquareAttacked(60, orBitBoardArray(board.whiteBitBoards), orBitBoardArray(board.blackBitBoards));
         assertFalse(actual);
 
-        board.makeMove(251681076);
-        board.makeMove(251680524);
-        board.makeMove(251677566);
-        board.makeMove(251675777);
-        board.makeMove(251672189);
+        board.makeMove(new Move(
+                51, 31, 5, false, 0, false, 0, false, false, new CastleState(), false
+        ));
+        board.makeMove(new Move(
+                12, 28, 5, false, 0, false, 0, false, false, new CastleState(), false
+        ));
+        board.makeMove(new Move(
+                62, 46, 4, false, 0, false, 0, false, false, new CastleState(), false
+        ));
 
-        actual = board.isSquareAttacked(4, board.orBitBoardArray(board.blackBitBoards), board.orBitBoardArray(board.whiteBitBoards));
-        assertFalse(actual);
-    }
+        board.makeMove(new Move(
+                5, 33, 3, false, 0, false, 0, false, false, new CastleState(), false
+        ));
 
-    // TODO: fix
-    @Test
-    public void testPin() {
-        ChessBoard board = new ChessBoard();
-
-        board.makeMove(251681076);
-        board.makeMove(251680524);
-        board.makeMove(251677566);
-        board.makeMove(251675777);
-        board.makeMove(251672189);
-        board.makeMove(251680459);
-        board.makeMove(252036909);
-        boolean actual = board.isSquareAttacked(4, board.orBitBoardArray(board.blackBitBoards),
-                board.orBitBoardArray(board.whiteBitBoards));
+        actual = board.isSquareAttacked(60, orBitBoardArray(board.blackBitBoards), orBitBoardArray(board.whiteBitBoards));
         assertTrue(actual);
     }
+
+    @Test
+    public void testPin() { // edge case pinned knight can't move
+        ChessBoard board = new ChessBoard();
+        board.makeMove(new Move(
+                51, 31, 5, false, 0, false, 0, false, false, new CastleState(), false
+        ));
+        board.makeMove(new Move(
+                12, 28, 5, false, 0, false, 0, false, false, new CastleState(), false
+        ));
+        board.makeMove(new Move(
+                57, 42, 4, false, 0, false, 0, false, false, new CastleState(), false
+        ));
+
+        board.makeMove(new Move(
+                5, 33, 3, false, 0, false, 0, false, false, new CastleState(), false
+        ));
+        int[][] movePairs = board.getMovePairs();
+        for (int[] move : movePairs) {
+            assertNotEquals(42, move[0]); // make sure pinned knight can't move
+        }
+    }
+
+
 }

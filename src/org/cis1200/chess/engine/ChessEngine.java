@@ -1,366 +1,327 @@
 package org.cis1200.chess.engine;
-import org.cis1200.chess.engine.ChessBoard;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import static org.cis1200.chess.engine.MoveGenerationPrecompute.*;
+import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfLeastSigBit;
 
 public class ChessEngine {
 
-    private static HashMap<Integer, Integer> PIECE_TO_SCORE;
 
     private static final int MAX = Integer.MAX_VALUE;
     private static final int MIN = Integer.MIN_VALUE;
-    private static final int MAX_SEARCH_DEPTH = 2;
+    private static final int MAX_SEARCH_DEPTH = 6;
 
     public int nodesSearched = 0;
     public int pruneAmount = 0;
 
-    private static final int[] WHITE_PAWN_POS_TABLE =
-            {0,  0,  0,  0,  0,  0,  0,  0,
-            50, 50, 50, 50, 50, 50, 50, 50,
-            10, 10, 20, 30, 30, 20, 10, 10,
-            5,  5, 10, 25, 25, 10,  5,  5,
-            0,  0,  0, 20, 20,  0,  0,  0,
-            5, -5,-10,  0,  0,-10, -5,  5,
-            5, 10, 10,-20,-20, 10, 10,  5,
-            0,  0,  0,  0,  0,  0,  0,  0};
+    private static final int OPENING_PHASE_THRESHOLD = 5900;
+    private static final int ENDGAME_PHASE_THRESHOLD = 500;
+    private static int MATERIAL_SCALING = 1;
 
-    private static final int[] WHITE_KNIGHT_POS_TABLE =
-            {-50,-40,-30,-30,-30,-30,-40,-50,
-            -40,-20,  0,  0,  0,  0,-20,-40,
-            -30,  0, 10, 15, 15, 10,  0,-30,
-            -30,  5, 15, 20, 20, 15,  5,-30,
-            -30,  0, 15, 20, 20, 15,  0,-30,
-            -30,  5, 10, 15, 15, 10,  5,-30,
-            -40,-20,  0,  5,  5,  0,-20,-40,
-            -50,-40,-30,-30,-30,-30,-40,-50};
+    //
+    private static final int[][] PIECE_SQUARE_TABLE = {
+            {-30, -40, -40, -50, -50, -40, -40, -30, // king
+                    -30, -37, -43, -49, -50, -39, -40, -30,
+                    -32, -41, -40, -46, -49, -40, -46, -30,
+                    -32, -38, -39, -52, -54, -39, -39, -30,
+                    -20, -33, -29, -42, -44, -29, -30, -19,
+                    -10, -18, -17, -20, -22, -21, -20, -13,
+                    -14,  -18,  -10,  -10,   -14,  -10,  15,  14,
+                    -21,  35,  -11,   6,   1,  -14,  32,  -22},
+            {-25,  -9, -11,  -3,  17, -13, -10, -17, // queen
+                    -4,  -6,   4,  -5,  -1,   6,   4,  -5,
+                    -8,  -5,   2,   0,   7,   6,  -4,  -5,
+                    0,  -4,   7,  -1,   7,  11,   0,   1,
+                    -6,   4,   7,   1,  -1,   2,  -6,  -2,
+                    -15,  11,  11,  11,   4,  11,   6, -15,
+                    -5,  -6,   1,  -6,   3,  -3,   3, -10,
+                    -15,  -4, -13,  10,  -3, -16,  -8, -24},
+            {5,  -2,   6,   2,  -2,  -6,   4,  -2, // rook
+                    8,  13,  11,  15,  11,  15,  16,   4,
+                    -6,   3,   3,   6,   1,  -2,   3,  -5,
+                    -10,   5,  -4,  -4,  -1,  -6,   3,  -2,
+                    -4,   3,   5,  -2,   4,   1,  -5,   1,
+                    0,   1,   1,  -3,   5,   6,   1,  -9,
+                    -10,  -1,  -4,   0,   5,  -6,  -6,  -9,
+                    -1,  -2,  -6,   9,   9,   5,   4,  -5,},
+            {-16, -15, -12,  -5, -10, -12, -10, -20, // bishop
+                    -13,   5,   6,   1,  -6,  -5,   3,  -6,
+                    -16,   6,  -1,  16,   7,  -1,  -6,  -5,
+                    -14,  -1,  11,  14,   4,  10,  11, -13,
+                    -4,   5,  12,  16,   4,   16,   2, -16,
+                    -15,   4,  14,   8,  14,   4,  16, -15,
+                    -5,   6,   6,   6,   3,   6,   9,  -7,
+                    -14,  -4, -15,  -4,  -9,  -14, -12, -14},
+            {-55, -40, -30, -28, -26, -30, -40, -50, // knight
+                    -37, -15, 0, -6, 4, 3, -17, -40,
+                    -25, 5, 16, 12, 11, 6, 6, -29,
+                    -24, 5, 21, 14, 18, 9, 11, -26,
+                    -36, -5, 9, 23, 24, 21, 2, -24,
+                    -32, -1, 15, 19, 20, 15, 11, -25,
+                    -38, -22, 4, -1, 8, -5, -18, -34,
+                    -50, -46, -32, -24, -36, -25, -46, -50},
+            {0, 0, 0, 0, 0, 0, 0, 0, // pawn
+            -4, 68, 61, 47, 47, 49, 45, -1,
+            6, 16, 25, 33, 24, 24, 14, -6,
+            0, -1, 9, 28, 20, 8, -1, 11,
+            6, 4, 6, 14, 14, -5, 6, -6,
+            -1, -8, -4, 4, 2, -12, -1, 5,
+            5, 16, 16, -14, -14, 13, 15, 8,
+            0, 0, 0, 0, 0, 0, 0, 0}
+    };
+    private static final int[][] PIECE_SQUARE_TABLE_ENDGAME = {
+            {-50, -40, -30, -20, -20, -30, -40, -50, // king
+            -30, -18, -15,   6,   3,  -6, -24, -30,
+            -35, -16,  20,  32,  34,  14, -11, -30,
+            -34,  -5,  24,  35,  34,  35, -16, -35,
+            -36,  -7,  31,  34,  34,  34, -12, -31,
+            -30,  -7,  14,  33,  36,  16, -13, -33,
+            -36, -27,   5,   2,   5,  -1, -31, -33,
+            -48, -26, -26, -26, -28, -25, -30, -51},
+            {-21,  -7,  -6,   1,  -8, -15, -10, -16, // queen
+            -4,  -5,   3,  -4,   2,   6,   3, -10,
+            -13,  -2,   7,   2,   6,  10,  -4,  -6,
+            -1,  -4,   3,   1,   8,   8,  -2,  -2,
+            0,   6,   8,   1,  -1,   1,   0,  -3,
+            -11,  10,   6,   3,   7,   9,   4, -10,
+            -12,  -6,   5,   0,   0,  -5,   4, -10,
+            -20,  -6,  -7,  -7,  -4, -12,  -9, -20},
+            {5,  -6,   1,  -4,  -4,  -6,   6,  -3, // rook
+            -6,   4,   2,   5,  -1,   3,   4, -15,
+            -15,   3,   3,   0,  -1,  -6,   5,  -9,
+            -16,   6,   0,  -6,  -3,  -3,  -4,  -4,
+            -15,   6,   2,  -6,   6,   0,  -6, -10,
+            -6,  -1,   3,  -2,   6,   5,   0, -15,
+            -8,  -4,   1,  -4,   3,  -5,  -6,  -5,
+            1,   0,  -2,   1,   1,   4,   2,   0},
+            {-14, -13,  -4,  -7, -14,  -9, -16, -20, // bishop
+            -11,   6,   3,  -6,   4,  -3,   5,  -4,
+            -11,  -3,   5,  15,   4,  -1,  -5, -10,
+            -7,  -1,  11,  16,   5,  11,   7, -13,
+            -4,   4,  10,  16,   6,  12,   4, -16,
+            -4,   4,  11,  12,  10,   7,   7, -12,
+            -11,   7,   6,   6,  -3,   2,   1,  -7,
+            -15,  -4, -11,  -4, -10, -10,  -6, -17},
+            {-50, -40, -30, -24, -24, -35, -40, -50, // knight
+            -38, -17,   6,  -5,   5,  -4, -15, -40,
+            -24,   3,  15,   9,  15,  10,  -6, -26,
+            -29,   5,  21,  17,  18,   9,  10, -28,
+            -36,  -5,  18,  16,  14,  20,   5, -26,
+            -32,   7,   5,  20,  11,  15,   9, -27,
+            -43, -20,   5,  -1,   5,   1, -22, -40,
+            -50, -40, -32, -27, -30, -25, -35, -50},
+            {0,   0,   0,   0,   0,   0,   0,   0, // pawn
+            -4, 174, 120,  94,  85,  98,  68,   4,
+            6,  48,  44,  45,  31,  38,  37,  -6,
+            -6,  -4,  -1,  -6,   2,  -1,  -2,  -2,
+            2,   2,   5,  -3,   0,  -5,   4,  -3,
+            -2,   0,   1,   5,   0,  -1,   0,   1,
+            -2,   5,   6,  -6,   0,   3,   4,  -4,
+            0,   0,   0,   0,   0,   0,   0,   0}
+    };
+    // Transposition table types
+    private static final int TT_EXACT = 0;
+    private static final int TT_ALPHA = 1;
+    private static final int TT_BETA  = 2;
 
-    private static final int[] WHITE_BISHOP_POS_TABLE =
-            {-20,-10,-10,-10,-10,-10,-10,-20,
-            -10,  0,  0,  0,  0,  0,  0,-10,
-            -10,  0,  5, 10, 10,  5,  0,-10,
-            -10,  5,  5, 10, 10,  5,  5,-10,
-            -10,  0, 10, 10, 10, 10,  0,-10,
-            -10, 10, 10, 10, 10, 10, 10,-10,
-            -10,  5,  0,  0,  0,  0,  5,-10,
-            -20,-10,-10,-10,-10,-10,-10,-20,};
+    // Transposition table entry
+    private static class TTEntry {
+        long key;
+        int depth;
+        int flag;
+        int score;
+        int bestMove;
+        TTEntry(long key, int depth, int flag, int score, int bestMove) {
+            this.key = key;
+            this.depth = depth;
+            this.flag = flag;
+            this.score = score;
+            this.bestMove = bestMove;
+        }
+    }
 
-    private static final int[] WHITE_ROOK_POS_TABLE =
-            {0,  0,  0,  0,  0,  0,  0,  0,
-            5, 10, 10, 10, 10, 10, 10,  5,
-            -5,  0,  0,  0,  0,  0,  0, -5,
-            -5,  0,  0,  0,  0,  0,  0, -5,
-            -5,  0,  0,  0,  0,  0,  0, -5,
-            -5,  0,  0,  0,  0,  0,  0, -5,
-            -5,  0,  0,  0,  0,  0,  0, -5,
-            0,  0,  0,  5,  5,  0,  0,  0};
-
-    private static final int[] WHITE_QUEEN_POS_TABLE =
-            {-20,-10,-10, -5, -5,-10,-10,-20,
-            -10,  0,  0,  0,  0,  0,  0,-10,
-            -10,  0,  5,  5,  5,  5,  0,-10,
-            -5,  0,  5,  5,  5,  5,  0, -5,
-            0,  0,  5,  5,  5,  5,  0, -5,
-            -10,  5,  5,  5,  5,  5,  0,-10,
-            -10,  0,  5,  0,  0,  0,  0,-10,
-            -20,-10,-10, -5, -5,-10,-10,-20};
-
-    private static final int[] WHITE_KING_POS_TABLE =
-            {-30,-40,-40,-50,-50,-40,-40,-30,
-            -30,-40,-40,-50,-50,-40,-40,-30,
-            -30,-40,-40,-50,-50,-40,-40,-30,
-            -30,-40,-40,-50,-50,-40,-40,-30,
-            -20,-30,-30,-40,-40,-30,-30,-20,
-            -10,-20,-20,-20,-20,-20,-20,-10,
-            20, 20,  0,  0,  0,  0, 20, 20,
-            20, 30, 10,  0,  0, 10, 30, 20};
-
-    private static final int[] WHITE_KING_POS_ENDGAME_TABLE =
-            {-50,-40,-30,-20,-20,-30,-40,-50,
-            -30,-20,-10,  0,  0,-10,-20,-30,
-            -30,-10, 20, 30, 30, 20,-10,-30,
-            -30,-10, 30, 40, 40, 30,-10,-30,
-            -30,-10, 30, 40, 40, 30,-10,-30,
-            -30,-10, 20, 30, 30, 20,-10,-30,
-            -30,-30,  0,  0,  0,  0,-30,-30,
-            -50,-30,-30,-30,-30,-30,-30,-50};
-
-    private static final int[] BLACK_PAWN_POS_TABLE =
-            {0,  0,  0,  0,  0,  0,  0,  0,
-                    5, 10, 10,-20,-20, 10, 10,  5,
-                    5, -5,-10,  0,  0,-10, -5,  5,
-                    0,  0,  0, 40, 40,  0,  0,  0,
-                    5,  5, 10, 45, 45, 10,  5,  5,
-                    10, 10, 20, 30, 30, 20, 10, 10,
-                    50, 50, 50, 50, 50, 50, 50, 50,
-                    0,  0,  0,  0,  0,  0,  0,  0};
-
-    private static final int[] BLACK_KNIGHT_POS_TABLE =
-            {-50,-40,-30,-30,-30,-30,-40,-50,
-                    -40,-20,  0,  5,  5,  0,-20,-40,
-                    -30,  5, 10, 15, 15, 10,  5,-30,
-                    -30,  0, 15, 20, 20, 15,  0,-30,
-                    -30,  5, 15, 20, 20, 15,  5,-30,
-                    -30,  0, 10, 15, 15, 10,  0,-30,
-                    -40,-20,  0,  0,  0,  0,-20,-40,
-                    -50,-40,-30,-30,-30,-30,-40,-50};
-
-    private static final int[] BLACK_BISHOP_POS_TABLE =
-            {-20,-10,-10,-10,-10,-10,-10,-20,
-                    -10,  5,  0,  0,  0,  0,  5,-10,
-                    -10, 10, 10, 10, 10, 10, 10,-10,
-                    -10,  0, 10, 10, 10, 10,  0,-10,
-                    -10,  5,  5, 10, 10,  5,  5,-10,
-                    -10,  0,  5, 10, 10,  5,  0,-10,
-                    -10,  0,  0,  0,  0,  0,  0,-10,
-                    -20,-10,-10,-10,-10,-10,-10,-20};
-
-    private static final int[] BLACK_ROOK_POS_TABLE =
-            {0,  0,  0,  5,  5,  0,  0,  0,
-                    -5,  0,  0,  0,  0,  0,  0, -5,
-                    -5,  0,  0,  0,  0,  0,  0, -5,
-                    -5,  0,  0,  0,  0,  0,  0, -5,
-                    -5,  0,  0,  0,  0,  0,  0, -5,
-                    -5,  0,  0,  0,  0,  0,  0, -5,
-                    5, 10, 10, 10, 10, 10, 10,  5,
-                    0,  0,  0,  0,  0,  0,  0,  0};
-
-    private static final int[] BLACK_QUEEN_POS_TABLE =
-            {-20,-10,-10, -5, -5,-10,-10,-20,
-                    -10,  0,  5,  0,  0,  0,  0,-10,
-                    -10,  5,  5,  5,  5,  5,  0,-10,
-                    0,  0,  5,  5,  5,  5,  0, -5,
-                    -5,  0,  5,  5,  5,  5,  0, -5,
-                    -10,  0,  5,  5,  5,  5,  0,-10,
-                    -10,  0,  0,  0,  0,  0,  0,-10,
-                    -20,-10,-10, -5, -5,-10,-10,-20};
-
-    private static final int[] BLACK_KING_POS_TABLE =
-            {20, 30, 10,  0,  0, 10, 30, 20,
-                    20, 20,  0,  -10,  -10,  0, 20, 20,
-                    -10,-20,-20,-20,-20,-20,-20,-10,
-                    -20,-30,-30,-40,-40,-30,-30,-20,
-                    -30,-40,-40,-50,-50,-40,-40,-30,
-                    -30,-40,-40,-50,-50,-40,-40,-30,
-                    -30,-40,-40,-50,-50,-40,-40,-30,
-                    -30,-40,-40,-50,-50,-40,-40,-30};
-
-    private static final int[] BLACK_KING_POS_ENDGAME_TABLE =
-            {-50,-30,-30,-30,-30,-30,-30,-50,
-                    -30,-30,  0,  0,  0,  0,-30,-30,
-                    -30,-10, 20, 30, 30, 20,-10,-30,
-                    -30,-10, 30, 40, 40, 30,-10,-30,
-                    -30,-10, 30, 40, 40, 30,-10,-30,
-                    -30,-10, 20, 30, 30, 20,-10,-30,
-                    -30,-20,-10,  0,  0,-10,-20,-30,
-                    -50,-40,-30,-20,-20,-30,-40,-50};
-
-    private static final int[][] WHITE_PIECE_POS_TABLE =
-            {WHITE_KING_POS_TABLE,
-            WHITE_QUEEN_POS_TABLE,
-            WHITE_ROOK_POS_TABLE,
-            WHITE_BISHOP_POS_TABLE,
-            WHITE_KNIGHT_POS_TABLE,
-            WHITE_PAWN_POS_TABLE};
-
-    private static final int[][] BLACK_PIECE_POS_TABLE =
-            {BLACK_KING_POS_TABLE,
-                    BLACK_QUEEN_POS_TABLE,
-                    BLACK_ROOK_POS_TABLE,
-                    BLACK_BISHOP_POS_TABLE,
-                    BLACK_KNIGHT_POS_TABLE,
-                    BLACK_PAWN_POS_TABLE};
-
-    private static final int[] POSITION_WEIGHTS = {
-            0, 0, 0, 10, 10, 0, 0, 0,
-            0, 5, 10, 20, 20, 10, 5, 0,
-            0, 7, 20, 30, 30, 20, 7, 0,
-            0, 10, 30, 50, 50, 30, 10, 0,
-            0, 10, 30, 50, 50, 30, 10, 0,
-            0, 7, 20, 30, 30, 20, 7, 0,
-            0, 5, 10, 20, 20, 10, 5, 0,
-            0, 0, 0, 10, 10, 0, 0, 0
+    private static final int[][] WHITE_MATERIAL_WEIGHTS = {
+            {20001, 888, 488, 319, 308, 89}, // opening material
+            {19998, 853, 497, 331, 319, 96} // endgame material
+    };
+    private static final int[][] BLACK_MATERIAL_WEIGHTS = {
+            {20002, 888, 492, 323, 307, 92}, // opening material
+            {20000, 845, 501, 334, 318, 102} // endgame material
     };
     public ChessEngine() {
-        PIECE_TO_SCORE = new HashMap<>();
-        PIECE_TO_SCORE.put(0, 0); // king = 0 points
-        PIECE_TO_SCORE.put(1, 9); // queen = 9 points
-        PIECE_TO_SCORE.put(2, 5); // rook == 5 points
-        PIECE_TO_SCORE.put(3, 3); // bishop = 3 points
-        PIECE_TO_SCORE.put(4, 3); // knight = 3 points
-        PIECE_TO_SCORE.put(5, 1); // pawn = 1 point
-
+        System.out.print("Initalizing AI...");
+        System.out.println(" Done!");
     }
 
-    private int scoreMove (int move) {
-        int source = move & 0b111111;
-        int target = (move & (0b111111 << 6)) >>> 6;
-        int piece = (move & (0b111 << 12)) >>> 12;
-        boolean capture = (move & (1 << 15)) >>> 15 == 1;
-        int pieceCaptured = (move & (0b111 << 16)) >>> 16;
-        boolean promotion = ((move & (1 << 19)) >>> 19) == 1;
-        int promotionPiece = (move & (0b11 << 20)) >>> 20;
-        boolean castleMove = ((move & (1 << 22)) >>> 22) == 1;
-        int castleDirection = (move & (1 << 23)) >>> 23;
-        int castleState = (move & (0b1111 << 24)) >>> 24; // previous state before move
-        boolean enPassant = ((move & (1 << 28)) >>> 28) == 1;
+    // game stage either 0 == opening, 1 = endgame (midGame is avg)
+    int getPieceMaterialScore(ChessBoard board) {
+        int materialScore = 0;
 
+        for (int piece = 1; piece <= 4; piece++) { // white
+            materialScore += Long.bitCount(board.whiteBitBoards[piece])
+                    * WHITE_MATERIAL_WEIGHTS[0][piece];
+        }
+        for (int piece = 1; piece <= 4; piece++) { // black
+            materialScore += Long.bitCount(board.blackBitBoards[piece])
+                    * BLACK_MATERIAL_WEIGHTS[0][piece];
+        }
+
+        return materialScore;
+    }
+    // MVV-LVA scoring for captures
+    // higher victimVal and lower attackerVal means a bigger score
+    private int mvvLvaScore(int attackerPiece, int victimPiece) {
+        int attackerVal = WHITE_MATERIAL_WEIGHTS[0][attackerPiece];
+        int victimVal = WHITE_MATERIAL_WEIGHTS[0][victimPiece];
+        return (victimVal * 100) - attackerVal;
+    }
+
+    // score move
+    private int scoreMove(Move move, boolean isWhiteTurn) {
         int score = 0;
-        if (promotion) {
-            score += 30 * promotionPiece;
-        }
-        /*
-        if (capture) {
-            score += -PIECE_TO_SCORE.get(piece);
+        if (move.isCastleMove) {
+            score += 10000;
         }
 
-         */
-        if (castleMove) {
-            score += castleDirection == 0 ? 10 : 8; // slightly prefer right castle
+        // captures via MVV-LVA
+        if (move.isCaptureMove) {
+            score += 50 * mvvLvaScore(move.piece, move.pieceCaptured);
+            // white material weights about same as black, don't need to check
+            if (BLACK_MATERIAL_WEIGHTS[0][move.pieceCaptured] < BLACK_MATERIAL_WEIGHTS[0][move.piece]) {
+                score -= 100;  //score -= 20000; // make sure don't capture piece
+            }
+
         }
-        // position weights (value center moves)
-        score += 10 * POSITION_WEIGHTS[target];
+
+        if (isWhiteTurn) {
+            score += 10 * PIECE_SQUARE_TABLE[move.piece][move.target];
+        } else {
+            score += 10 * PIECE_SQUARE_TABLE[move.piece][63-move.target];
+        }
         return score;
-
-    }
-    private int compareMove(Integer move1, Integer move2) {
-        return scoreMove(move2) - scoreMove(move1);
     }
 
-    // sort in place
-    private void sortMoves(ArrayList<Integer> moves, boolean descending) {
-        if (descending) {
-            Collections.sort(moves, (move1, move2) -> compareMove(move1, move2));
-        } else {
-            Collections.sort(moves, (move1, move2) -> compareMove(move2, move1));
+    // Sort moves using our improved heuristic
+    private void orderMoves(ArrayList<Move> moves, boolean isWhiteTurn) {
+        // precompute scores because scoreMove can be time-consuming
+        HashMap<Move, Integer> scores = new HashMap<>();
+        for (Move m : moves) {
+            scores.put(m, scoreMove(m, isWhiteTurn));
         }
+        moves.sort((a, b) -> Integer.compare(scores.get(b), scores.get(a)));
     }
+
     // eval board: + nums good for white, - nums good for black
-    private int evalBoard(ChessBoard board) {
-        // white score
-        int whiteScore = 0;
-        int whitePieceScore = 0; // amount of pieces white has
-        for (int piece = 1; piece < 6; piece++) { // don't consider kings (do later)
-            long pieceBitBoard = board.whiteBitBoards[piece];
-            int pieceScore = PIECE_TO_SCORE.get(piece);
-            while (pieceBitBoard != 0) {
-                int pos = board.getPosOfLeastSigBit(pieceBitBoard);
-                whiteScore += 10 * WHITE_PIECE_POS_TABLE[piece][pos]; // add location bonus
-                whitePieceScore += pieceScore; // add piece score bonus
-                pieceBitBoard ^= startingBitBoards[pos]; // remove piece from consideration
-            }
-        }
+    private int evalBoard(ChessBoard board, boolean isWhiteToMove) {
+        int pieceMaterialScore = getPieceMaterialScore(board);
+        int gamePhase = -1;
 
-        // black score
-        int blackScore = 0;
-        int blackPieceScore = 0; // amount of pieces white has
-        for (int piece = 1; piece < 6; piece++) { // don't consider kings (do later)
-            long pieceBitBoard = board.blackBitBoards[piece];
-            int pieceScore = PIECE_TO_SCORE.get(piece);
-            while (pieceBitBoard != 0) {
-                int pos = board.getPosOfLeastSigBit(pieceBitBoard);
-                blackScore += 10 * BLACK_PIECE_POS_TABLE[piece][pos]; // add location bonus
-                blackPieceScore += pieceScore; // add piece score bonus
-                pieceBitBoard ^= startingBitBoards[pos]; // remove piece from consideration
-            }
+        if (pieceMaterialScore > OPENING_PHASE_THRESHOLD) {
+            gamePhase = 0;
         }
-        if (whitePieceScore < 14 && blackPieceScore < 14) { // endgame (not many pieces)
-            int whiteKingPos = board.getPosOfLeastSigBit(board.whiteBitBoards[0]);
-            whiteScore += WHITE_KING_POS_ENDGAME_TABLE[whiteKingPos];
-            int blackKingPos = board.getPosOfLeastSigBit(board.blackBitBoards[0]);
-            blackScore += BLACK_KING_POS_ENDGAME_TABLE[blackKingPos];
+        else if (pieceMaterialScore < ENDGAME_PHASE_THRESHOLD) {
+            gamePhase = 1; // endgame
         } else {
-            int whiteKingPos = board.getPosOfLeastSigBit(board.whiteBitBoards[0]);
-            whiteScore += 10 * WHITE_KING_POS_TABLE[whiteKingPos];
-            int blackKingPos = board.getPosOfLeastSigBit(board.blackBitBoards[0]);
-            blackScore += 10 * BLACK_KING_POS_TABLE[blackKingPos];
+            gamePhase = 2; // midGame
         }
-        return (whiteScore - blackScore) + 80 * (whitePieceScore - blackPieceScore);
+        int score;
+        int scoreOpening = 0;
+        int scoreEndgame = 0;
+
+        for (int piece = 0; piece < 6; piece++) {
+            // white eval
+            long pieceMask = board.whiteBitBoards[piece];
+            while (pieceMask != 0) {
+                int pos = getPosOfLeastSigBit(pieceMask);
+                scoreOpening += MATERIAL_SCALING * WHITE_MATERIAL_WEIGHTS[0][piece];
+                scoreEndgame += MATERIAL_SCALING * WHITE_MATERIAL_WEIGHTS[1][piece];
+                scoreOpening += PIECE_SQUARE_TABLE[piece][pos];
+                scoreEndgame += PIECE_SQUARE_TABLE_ENDGAME[piece][pos];
+                pieceMask ^= startingBitBoards[pos];
+            }
+            // black eval
+            pieceMask = board.blackBitBoards[piece];
+            while (pieceMask != 0) {
+                int pos = getPosOfLeastSigBit(pieceMask);
+                scoreOpening -= MATERIAL_SCALING * BLACK_MATERIAL_WEIGHTS[0][piece];
+                scoreEndgame -= MATERIAL_SCALING * BLACK_MATERIAL_WEIGHTS[1][piece];
+
+                scoreOpening -= PIECE_SQUARE_TABLE[piece][63-pos];
+                scoreEndgame -= PIECE_SQUARE_TABLE_ENDGAME[piece][63-pos];
+                pieceMask ^= startingBitBoards[pos];
+            }
+
+        }
+        if (gamePhase == 2) { // midgame
+            score = (
+                    scoreOpening * pieceMaterialScore +
+                            scoreEndgame * (OPENING_PHASE_THRESHOLD - pieceMaterialScore)
+            ) / OPENING_PHASE_THRESHOLD;
+        }
+        else if (gamePhase == 0) { // opening
+            score = scoreOpening;
+        } else { // endgame
+            score = scoreEndgame;
+        }
+        return isWhiteToMove ? score : - score;
+
     }
 
-    public int getBestMove(ChessBoard board) {
-        int[] result = minimax(board, 0, board.isWhiteTurn(), MIN, MAX);
-        for (int move : board.getLegalPossibleMoves()) {
-            board.makeMove(move);
-            System.out.println(board.visualizeBoard());
-            System.out.println(evalBoard(board));
-            //board.printBinary(move);
-            board.undoLastMove();
-        }
-        return result[0];
+    public Move getBestMove(ChessBoard board) {
+        AIEvaluation result = negamax(board, 0, board.isWhiteTurn(), MIN, MAX);
+        return result.move;
     }
-    // maximizing player = white
-    // returns 2 element int array [move (int), score]
-    private int[] minimax(ChessBoard board, int depth, boolean isMaximizingPlayer, int alpha, int beta) {
-        nodesSearched += 1;
-        ArrayList<Integer> moves = board.getLegalPossibleMoves();
+
+    /**
+     * negamax with move ordering.
+     * returns [bestMove, score].
+     */
+
+    private AIEvaluation negamax(ChessBoard board, int depth, boolean isWhiteToMove, int alpha, int beta) {
+        nodesSearched++;
+        ArrayList<Move> moves = board.getLegalPossibleMoves();
         int gameState = board.checkWinner(moves);
         if (gameState == 1) { // white win
-            return new int[]{-1, MAX};
-        }
-        else if (gameState == -1) { // black win
-            return new int[]{-1, MIN};
+            return new AIEvaluation(null, isWhiteToMove ? MAX - depth : MIN + depth); // - depth b/c pick the fastest way to win
+        } else if (gameState == -1) { // black win
+            return new AIEvaluation(null, isWhiteToMove ? MIN + depth : MAX - depth);
         } else if (gameState == 2) { // draw
-            return new int[]{-1, 0};
+            return new AIEvaluation(null, 0);
         } else if (depth == MAX_SEARCH_DEPTH) {
-            return new int[]{-1, evalBoard(board)};
+            return new AIEvaluation(null, evalBoard(board, isWhiteToMove));
         }
-        //System.out.println(moves);
-        sortMoves(moves, isMaximizingPlayer);
-       // System.out.println(moves);
-        if (isMaximizingPlayer) { // white
-            int bestScore = MIN;
-            int bestMove = -1;
-            for (int move : moves) {
-                board.makeMove(move);
-                int[] result = minimax(board, depth+1,
-                        false, alpha, beta);
-                int currScore = result[1];
-                board.undoLastMove();
-                if (currScore > bestScore) {
-                    bestScore = currScore;
-                    bestMove = move;
-                }
 
-                alpha = Math.max(bestScore, alpha);
-
-                if (beta <= alpha) {
-                    break;
-                }
-            }
-            return new int[]{bestMove, bestScore};
-        } else { // black
-            int bestScore = MAX;
-            int bestMove = -1;
-            for (int move : moves) {
-
-                board.makeMove(move);
-                int[] result = minimax(board, depth+1,
-                        true, alpha, beta);
-                int currScore = result[1];
-                board.undoLastMove();
-                if (currScore < bestScore) {
-                    bestScore = currScore;
-                    bestMove = move;
-                }
-
-                beta = Math.min(bestScore, beta);
-
-                if (beta <= alpha) {
-                    pruneAmount += 1;
-                    break;
-                }
-            }
-            if (bestMove == -1) {
-                System.out.println(board.visualizeBoard());
-                System.out.println(moves);
-                System.out.println(board.getLegalPossibleMoves());
-            }
-            return new int[]{bestMove, bestScore};
+        if (moves.isEmpty()) {
+            // no moves
+            return new AIEvaluation(null, evalBoard(board, isWhiteToMove));
         }
+
+        // order moves with heuristics
+        orderMoves(moves, isWhiteToMove);
+
+        Move bestMove = null;
+        int bestScore = MIN;
+
+        for (Move move : moves) {
+            board.makeMove(move);
+            // negamax: flip perspective
+            AIEvaluation result = negamax(board, depth + 1, !isWhiteToMove, -beta, -alpha);
+            int score = -result.score;
+            board.undoLastMove();
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+                if (score > alpha) {
+                    pruneAmount++;
+                    alpha = score;
+                    if (alpha >= beta) {
+                        return new AIEvaluation(bestMove, bestScore);
+                    }
+                }
+            }
+        }
+        return new AIEvaluation(bestMove, bestScore);
     }
-
 }

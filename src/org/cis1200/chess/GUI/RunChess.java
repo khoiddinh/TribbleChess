@@ -34,6 +34,44 @@ public class RunChess implements Runnable {
         reset.addActionListener(e -> board.reset());
         control_panel.add(reset);
 
+        final JButton instructions = new JButton("Instructions/Description");
+        instructions.addActionListener(e -> {
+            // Display a simple instructions dialog
+            JOptionPane.showMessageDialog(
+                    frame,
+                    "How to Play:\n\n" +
+                            "1. Each type of piece moves in a distinct way.\n" +
+                            "2. Pawns move forward one square at a time (with some exceptions).\n" +
+                            "3. Rooks move horizontally or vertically any number of squares.\n" +
+                            "4. Knights move in an L-shape.\n" +
+                            "5. Bishops move diagonally any number of squares.\n" +
+                            "6. The Queen can move horizontally, vertically, and diagonally.\n" +
+                            "7. The King can move one square in any direction.\n" +
+                            "8. To move a piece, click and drag it to the desired square. \n" +
+                            "The goal is to checkmate your opponent’s King. \n\n" +
+                            "Notable Features: \n" +
+                            "The Black pieces are controlled by an AI. I worked really hard on that :) \n" +
+                                    "I was able to do this by optimizing the chess move generation " +
+                                    "logic by using integer bit math instead of 2D arrays. \n" +
+                                    "This means that all the pieces are stored as integers " +
+                                    "and simply operated on to generate the moves. \n" +
+                                    "If you're interested, look through the source code, " +
+                            "I think the math is really cool! \n"
+                    ,
+                    "Instructions & Description",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+        });
+        control_panel.add(instructions);
+
+        // AI toggle button
+        final JButton aiToggle = new JButton("AI Playing: On");
+        aiToggle.addActionListener(e -> {
+            board.isAIPlayingBlack = !board.isAIPlayingBlack;  // toggle the state
+            aiToggle.setText(board.isAIPlayingBlack ? "AI Playing: On" : "AI Playing: Off");
+        });
+        control_panel.add(aiToggle);
+
         // Put the frame on the screen
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
