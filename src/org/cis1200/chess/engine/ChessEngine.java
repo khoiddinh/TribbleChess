@@ -183,7 +183,7 @@ public class ChessEngine {
             // white material weights about same as black, don't need to check
             if (BLACK_MATERIAL_WEIGHTS[0][move.getPieceCaptured()]
                     < BLACK_MATERIAL_WEIGHTS[0][move.getPiece()]) {
-                score /= 5;  //score -= 20000; // make sure don't capture piece
+                score -= 100;  //score -= 20000; // make sure don't capture piece
             }
 
         }
@@ -231,7 +231,7 @@ public class ChessEngine {
                 scoreEndgame += materialScaling * WHITE_MATERIAL_WEIGHTS[1][piece];
                 scoreOpening += PIECE_SQUARE_TABLE[piece][pos];
                 scoreEndgame += PIECE_SQUARE_TABLE_ENDGAME[piece][pos];
-                pieceMask ^= startingBitBoards[pos];
+                pieceMask ^= getStartingBitBoards()[pos];
             }
             // black eval
             pieceMask = board.blackBitBoards()[piece];
@@ -242,7 +242,7 @@ public class ChessEngine {
 
                 scoreOpening -= PIECE_SQUARE_TABLE[piece][63 - pos];
                 scoreEndgame -= PIECE_SQUARE_TABLE_ENDGAME[piece][63 - pos];
-                pieceMask ^= startingBitBoards[pos];
+                pieceMask ^= getStartingBitBoards()[pos];
             }
 
         }

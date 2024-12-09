@@ -5,7 +5,6 @@ import java.util.Stack;
 import java.util.ArrayList;
 
 import static org.cis1200.chess.engine.MoveGenerationPrecompute.*;
-
 import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfLeastSigBit;
 import static org.cis1200.chess.engine.BitBoardFunctions.orBitBoardArray;
 
@@ -109,7 +108,7 @@ public class ChessBoard {
                 char[] whitePieceMap = new char[]{'K', 'Q', 'R','B','N','P'};
                 for (int piece = 0; piece < 6; piece++) {
                     // check if piece is at this pos
-                    if ((whiteBitBoards[piece] & startingBitBoards[row * 8 + col]) != 0) {
+                    if ((whiteBitBoards[piece] & getStartingBitBoards()[row * 8 + col]) != 0) {
                         returnBoard[row][col] = whitePieceMap[piece];
                         break;
                     }
@@ -117,7 +116,7 @@ public class ChessBoard {
                 char[] blackPieceMap = new char[]{'k', 'q', 'r', 'b', 'n', 'p'};
                 for (int piece = 0; piece < 6; piece++) {
                     // check if piece is at this pos
-                    if ((blackBitBoards[piece] & startingBitBoards[row * 8 + col]) != 0) {
+                    if ((blackBitBoards[piece] & getStartingBitBoards()[row * 8 + col]) != 0) {
                         returnBoard[row][col] = blackPieceMap[piece];
                         break;
                     }
@@ -150,7 +149,7 @@ public class ChessBoard {
         long blockerBitBoard = friendlyBitBoard | opponentBitBoard;
         switch (piece) {
             case 0: // king
-                moveMask = kingAttackMasks[pos];
+                moveMask = getKingAttackMasks()[pos];
                 break;
             case 1: // queen
                 moveMask = PRECOMPUTE.getSlidingMagicAttack(pos, blockerBitBoard, 1);
@@ -162,37 +161,37 @@ public class ChessBoard {
                 moveMask = PRECOMPUTE.getSlidingMagicAttack(pos, blockerBitBoard, 3);
                 break;
             case 4: // knight
-                moveMask = knightAttackMasks[pos];
+                moveMask = getKnightAttackMasks()[pos];
                 break;
             case 5: // pawn
                 // returns both moves and attacks
                 // does not handle enPassant (handled in getPossibleLegalMoves)
                 if (isWhiteTurn) {
-                    if ((whitePawnMoveMasks[pos] & blockerBitBoard) == 0) {
+                    if ((getWhitePawnMoveMasks()[pos] & blockerBitBoard) == 0) {
                         // can double push potentially
-                        moveMask = whitePawnMoveMasks[pos]; // only can go
+                        moveMask = getWhitePawnMoveMasks()[pos]; // only can go
                         // there if opponent not there
                     } else { // check single move
                         // get rid of any second row moves
                         // or if there is an opponent there do nothing
-                        moveMask = whitePawnMoveMasks[pos]
+                        moveMask = getWhitePawnMoveMasks()[pos]
                                 & ~blockerBitBoard & ~(BOTTOM_SIDE_BOARD << 24);
                     }
-                    moveMask |= (whitePawnAttackMasks[pos]
+                    moveMask |= (getWhitePawnAttackMasks()[pos]
                             & blockerBitBoard); // only can go there if takes
                 } else { // black pawn moves
-                    if ((blackPawnMoveMasks[pos]
+                    if ((getBlackPawnMoveMasks()[pos]
                             & blockerBitBoard) == 0) { // no overlap in opponent piece
                         // can double push potentially
-                        moveMask = blackPawnMoveMasks[pos]; // only can go there
+                        moveMask = getBlackPawnMoveMasks()[pos]; // only can go there
                         // if opponent not there
                     } else { // check single move
                         // get rid of any second row moves or if there is an
                         // opponent there do nothing
-                        moveMask = blackPawnMoveMasks[pos] & ~blockerBitBoard
+                        moveMask = getBlackPawnMoveMasks()[pos] & ~blockerBitBoard
                                 & ~(TOP_SIDE_BOARD >>> 24);
                     }
-                    moveMask |= (blackPawnAttackMasks[pos] & opponentBitBoard);
+                    moveMask |= (getBlackPawnAttackMasks()[pos] & opponentBitBoard);
                 }
                 break;
             default:
@@ -210,7 +209,7 @@ public class ChessBoard {
         for (int piece = 0; piece < 6; piece++) {
             switch (piece) {
                 case 0: // king
-                    potentialAttacks[piece] = kingAttackMasks[pos];
+                    potentialAttacks[piece] = getKingAttackMasks()[pos];
                     break;
                 case 1: // queen
                 case 2: // rook
@@ -219,27 +218,27 @@ public class ChessBoard {
                             PRECOMPUTE.getSlidingMagicAttack(pos, blockerBitBoard, piece);
                     break;
                 case 4: // knight
-                    potentialAttacks[piece] = knightAttackMasks[pos];
+                    potentialAttacks[piece] = getKnightAttackMasks()[pos];
                     break;
                 case 5: // pawn
-                    if (isWhiteTurn && ((startingBitBoards[pos]
+                    if (isWhiteTurn && ((getStartingBitBoards()[pos]
                             & TOP_MASK) == 0)) { // not on top row
-                        if ((startingBitBoards[pos]
+                        if ((getStartingBitBoards()[pos]
                                 & LEFT_MASK) == 0) { // not on left side
-                            potentialAttacks[piece] |= startingBitBoards[pos - 9];
+                            potentialAttacks[piece] |= getStartingBitBoards()[pos - 9];
                         }
-                        if ((startingBitBoards[pos] & RIGHT_MASK) == 0) { // not on right side
-                            potentialAttacks[piece] |= startingBitBoards[pos - 7];
+                        if ((getStartingBitBoards()[pos] & RIGHT_MASK) == 0) { // not on right side
+                            potentialAttacks[piece] |= getStartingBitBoards()[pos - 7];
                         }
-                    } else if (!isWhiteTurn && (((startingBitBoards[pos]
+                    } else if (!isWhiteTurn && (((getStartingBitBoards()[pos]
                             & BOTTOM_MASK) == 0))) {  // not on bottom row;
-                        if (((startingBitBoards[pos]
+                        if (((getStartingBitBoards()[pos]
                                 & LEFT_MASK) == 0)) { // not on left side
-                            potentialAttacks[piece] |= startingBitBoards[pos + 7];
+                            potentialAttacks[piece] |= getStartingBitBoards()[pos + 7];
                         }
-                        if (((startingBitBoards[pos]
+                        if (((getStartingBitBoards()[pos]
                                 & RIGHT_MASK) == 0)) { // not on right side
-                            potentialAttacks[piece] |= startingBitBoards[pos + 9];
+                            potentialAttacks[piece] |= getStartingBitBoards()[pos + 9];
                         }
                     }
                     break;
@@ -267,7 +266,7 @@ public class ChessBoard {
 
     private int findPieceAtPos(int pos, boolean findWhitePiece) {
         long[] bitBoardList = findWhitePiece ? whiteBitBoards : blackBitBoards;
-        long posMask = startingBitBoards[pos];
+        long posMask = getStartingBitBoards()[pos];
         for (int piece = 0; piece < 6; piece++) {
             if ((posMask & bitBoardList[piece]) != 0) {
                 return piece;
@@ -384,7 +383,7 @@ public class ChessBoard {
                                 (Math.abs(prevMove.getSource()
                                         - prevMove.getTarget())
                                         == 16)) { // if pawn and two square move
-                            if (((startingBitBoards[pos]
+                            if (((getStartingBitBoards()[pos]
                                     & LEFT_SIDE_BOARD) == 0)) { // if pawn not on left edge
                                 // calculate left side enPassant
                                 if (pos - 1 == prevMove.getTarget()) {
@@ -397,7 +396,7 @@ public class ChessBoard {
                                             true));
                                 }
                             }
-                            if (((startingBitBoards[pos]
+                            if (((getStartingBitBoards()[pos]
                                     & RIGHT_SIDE_BOARD) == 0)) { // if pawn not on right edge
                                 // calculate right side enPassant
                                 if (pos + 1 == prevMove.getTarget()) {
@@ -420,7 +419,7 @@ public class ChessBoard {
                     int targetPos = getPosOfLeastSigBit(moveMask);
 
                     // capture logic
-                    boolean isCaptureMove = (startingBitBoards[targetPos]
+                    boolean isCaptureMove = (getStartingBitBoards()[targetPos]
                             & opposingBitBoard) != 0;
                     int capturedPiece = 0;
                     if (isCaptureMove) { // if capturing a piece, find the piece we're capturing
@@ -434,7 +433,7 @@ public class ChessBoard {
                     boolean isPromotion = false;
                     if (piece == 5) {
                         if (isWhiteTurn
-                                && ((startingBitBoards[targetPos]
+                                && ((getStartingBitBoards()[targetPos]
                                 & TOP_MASK) != 0)) { // white promotion
                             for (int promotionPiece = 2;
                                  promotionPiece < 4; promotionPiece++) { // queen added by default
@@ -449,7 +448,7 @@ public class ChessBoard {
                             isPromotion = true;
                         }
                         else if (!isWhiteTurn &&
-                                ((startingBitBoards[targetPos]
+                                ((getStartingBitBoards()[targetPos]
                                         & BOTTOM_MASK) != 0)) { // black promotion
                             for (int promotionPiece = 2;
                                  promotionPiece < 4; promotionPiece++) { // queen added by default
@@ -482,11 +481,11 @@ public class ChessBoard {
                                 castleState.copy(), false)
                         );
                     }
-                    moveMask ^= startingBitBoards[targetPos];
+                    moveMask ^= getStartingBitBoards()[targetPos];
                     // remove this move from move mask
                     // cont: (the moves that we still have to convert and encode)
                 }
-                pieceBitBoard ^= startingBitBoards[pos];
+                pieceBitBoard ^= getStartingBitBoards()[pos];
                 // remove piece from bitboard and process next
             }
         }
@@ -500,35 +499,35 @@ public class ChessBoard {
         long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
         long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
         // remove piece at source location
-        bitBoardList[move.getPiece()] ^= startingBitBoards[move.getSource()];
+        bitBoardList[move.getPiece()] ^= getStartingBitBoards()[move.getSource()];
         // add at new target location
-        bitBoardList[move.getPiece()] |= startingBitBoards[move.getTarget()];
+        bitBoardList[move.getPiece()] |= getStartingBitBoards()[move.getTarget()];
         // if capture move, update the capture bitboard in opponent bitboard
         if (move.getIsCaptureMove()
                 && !move.getIsEnPassantMove()) {
             // don't handle enPassant b/c target isn't loc of enemy pawn
             opponentBitBoardList[move.getPieceCaptured()]
-                    ^= startingBitBoards[move.getTarget()]; // remove captured piece
+                    ^= getStartingBitBoards()[move.getTarget()]; // remove captured piece
         }
         if (move.getIsEnPassantMove()) {
             // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
             opponentBitBoardList[5] ^=
-                    startingBitBoards[isWhiteTurn ? move.getTarget() + 8 : move.getTarget() - 8];
+                    getStartingBitBoards()[isWhiteTurn ? move.getTarget() + 8 : move.getTarget() - 8];
         }
         // if promotion, replace the pawn (that we already moved) with the promoted piece
         if (move.getIsPromotionMove()) {
-            bitBoardList[move.getPiece()] ^= startingBitBoards[move.getTarget()]; // remove pawn
+            bitBoardList[move.getPiece()] ^= getStartingBitBoards()[move.getTarget()]; // remove pawn
             bitBoardList[move.getPromotionPiece()]
-                    |= startingBitBoards[move.getTarget()]; // replace with promoted piece
+                    |= getStartingBitBoards()[move.getTarget()]; // replace with promoted piece
         }
         // if castleMove, move the rook since we already moved the king above
         if (move.getIsCastleMove()) {
             if (move.getRightCastleDirection()) { // right castle
-                bitBoardList[2] ^= startingBitBoards[isWhiteTurn ? 63 : 7];
-                bitBoardList[2] |= startingBitBoards[isWhiteTurn ? 61 : 5];
+                bitBoardList[2] ^= getStartingBitBoards()[isWhiteTurn ? 63 : 7];
+                bitBoardList[2] |= getStartingBitBoards()[isWhiteTurn ? 61 : 5];
             } else { // left castle
-                bitBoardList[2] ^= startingBitBoards[isWhiteTurn ? 56 : 0];
-                bitBoardList[2] |= startingBitBoards[isWhiteTurn ? 59 : 3];
+                bitBoardList[2] ^= getStartingBitBoards()[isWhiteTurn ? 56 : 0];
+                bitBoardList[2] |= getStartingBitBoards()[isWhiteTurn ? 59 : 3];
             }
             // update the castle fields
             if (isWhiteTurn) {
@@ -590,36 +589,36 @@ public class ChessBoard {
         long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
         // if promotion, remove promoted piece from target
         if (move.getIsPromotionMove()) {
-            bitBoardList[move.getPromotionPiece()] ^= startingBitBoards[move.getTarget()];
+            bitBoardList[move.getPromotionPiece()] ^= getStartingBitBoards()[move.getTarget()];
         } else { // otherwise
             // remove piece from target
-            bitBoardList[move.getPiece()] ^= startingBitBoards[move.getTarget()];
+            bitBoardList[move.getPiece()] ^= getStartingBitBoards()[move.getTarget()];
         }
         // add it back to the original place
-        bitBoardList[move.getPiece()] |= startingBitBoards[move.getSource()];
+        bitBoardList[move.getPiece()] |= getStartingBitBoards()[move.getSource()];
         // if captured, add the enemy piece back to its spot
         if (move.getIsCaptureMove()
                 && !move.getIsEnPassantMove()) {
             // don't consider enPassant, handle replace below in the enPassant block
             opponentBitBoardList[move.getPieceCaptured()]
-                    |= startingBitBoards[move.getTarget()];
+                    |= getStartingBitBoards()[move.getTarget()];
         }
         // put the captured pawn back, already moved capturing pawn back
         if (move.getIsEnPassantMove()) {
             // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
             opponentBitBoardList[5]
-                    |= startingBitBoards[isWhiteTurn ?
+                    |= getStartingBitBoards()[isWhiteTurn ?
                     move.getTarget() + 8 : move.getTarget() - 8];
         }
 
         // if castle, move rook back and fix castle fields
         if (move.getIsCastleMove()) {
             if (move.getRightCastleDirection()) { // right castle
-                bitBoardList[2] ^= startingBitBoards[isWhiteTurn ? 61 : 5];
-                bitBoardList[2] |= startingBitBoards[isWhiteTurn ? 63 : 7];
+                bitBoardList[2] ^= getStartingBitBoards()[isWhiteTurn ? 61 : 5];
+                bitBoardList[2] |= getStartingBitBoards()[isWhiteTurn ? 63 : 7];
             } else { // left castle
-                bitBoardList[2] ^= startingBitBoards[isWhiteTurn ? 59 : 3];
-                bitBoardList[2] |= startingBitBoards[isWhiteTurn ? 56 : 0];
+                bitBoardList[2] ^= getStartingBitBoards()[isWhiteTurn ? 59 : 3];
+                bitBoardList[2] |= getStartingBitBoards()[isWhiteTurn ? 56 : 0];
             }
 
         }

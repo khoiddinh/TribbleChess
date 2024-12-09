@@ -13,45 +13,45 @@ public class MoveGenerationPrecompute {
     public static final long TOP_MASK = 0xFF00000000000000L;
     public static final long BOTTOM_MASK = 0xFFL;
 
-    public static long[] startingBitBoards;
+    private static long[] startingBitBoards;
 
-    public static long[] kingAttackMasks;
-    public static long[] knightAttackMasks;
+    private static long[] kingAttackMasks;
+    private static long[] knightAttackMasks;
 
-    public static long[] whitePawnMoveMasks;
-    public static long[] whitePawnAttackMasks;
+    private static long[] whitePawnMoveMasks;
+    private static long[] whitePawnAttackMasks;
 
-    public static long[] blackPawnMoveMasks;
-    public static long[] blackPawnAttackMasks;
+    private static long[] blackPawnMoveMasks;
+    private static long[] blackPawnAttackMasks;
 
-    public static long[] rookAttackMasks;
-    public static long[] bishopAttackMasks;
-    public static long[] queenAttackMasks;
+    private static long[] rookAttackMasks;
+    private static long[] bishopAttackMasks;
+    private static long[] queenAttackMasks;
 
     // bitshift amounts corresponding to each direction
     // NOTE: left shift vs right shift
     public static final int[] RAY_DIRECTIONS = {1, 9, 8, 7};
     public static final long[] LEFT_END_MASKS =
-            {LEFT_MASK, LEFT_MASK | TOP_MASK, TOP_MASK, RIGHT_MASK | TOP_MASK};
+        {LEFT_MASK, LEFT_MASK | TOP_MASK, TOP_MASK, RIGHT_MASK | TOP_MASK};
     public static final long[] RIGHT_END_MASKS =
-            {RIGHT_MASK, RIGHT_MASK | BOTTOM_MASK, BOTTOM_MASK, LEFT_MASK | BOTTOM_MASK};
+        {RIGHT_MASK, RIGHT_MASK | BOTTOM_MASK, BOTTOM_MASK, LEFT_MASK | BOTTOM_MASK};
 
-    public static long[][] RAYS; // [direction][position]
+    private static long[][] rays; // [direction][position]
     // left = 0, up left = 1, up = 2, up right = 3 (left shifts)
     // right = 4, down right = 5, down = 6, down left = 7 (right shifts)
     // position is square (n) where 0 <= n < 64
 
     // Magic Bitboard Lookup Tables
-    public static long[][] BISHOP_ATTACK_TABLE; // [pos][has
-    public static long[][] ROOK_ATTACK_TABLE;
+    private static long[][] bishopAttackTable; // [pos][has
+    private static long[][] rookAttackTable;
 
-    private static long[] BISHOP_MAGICS;
-    private static long[] ROOK_MAGICS;
+    private static long[] bishopMagics;
+    private static long[] rookMagics;
 
     public MoveGenerationPrecompute() {
         startingBitBoards = new long[64];
         for (int i = 0; i < 64; i++) {
-            startingBitBoards[i] = 0x1L << 63-i;
+            startingBitBoards[i] = 0x1L << 63 - i;
         }
         System.out.print("Generating Precomputation Tables... ");
         kingAttackMasks = new long[64];
@@ -82,7 +82,7 @@ public class MoveGenerationPrecompute {
             blackPawnMoveMasks[i] = generateBlackPawnMoveMask(i);
         }
 
-        RAYS = generateRays();
+        rays = generateRays();
 
         rookAttackMasks = new long[64];
         for (int i = 0; i < 64; i++) {
@@ -98,15 +98,49 @@ public class MoveGenerationPrecompute {
         for (int i = 0; i < 64; i++) {
             queenAttackMasks[i] = generateQueenAttackMask(i);
         }
-        ROOK_MAGICS = new long[64];
-        BISHOP_MAGICS = new long[64];
+        rookMagics = new long[64];
+        bishopMagics = new long[64];
         System.out.println("Done!");
 
-        ROOK_ATTACK_TABLE = new long[64][]; // 64 * 2^12 (4096) (possible combos of blocker)
-        BISHOP_ATTACK_TABLE = new long[64][]; // 64 * 2^9 (512)
+        rookAttackTable = new long[64][]; // 64 * 2^12 (4096) (possible combos of blocker)
+        bishopAttackTable = new long[64][]; // 64 * 2^9 (512)
 
         generateRookMagicBitBoards();
         generateBishopMagicBitBoards();
+    }
+
+    public static long[][] getRays() {
+        return rays;
+    }
+    public static long[] getStartingBitBoards() {
+        return startingBitBoards;
+    }
+    public static long[] getKingAttackMasks() {
+        return kingAttackMasks;
+    }
+
+    public static long[] getKnightAttackMasks() {
+        return knightAttackMasks;
+    }
+
+    public static long[] getWhitePawnMoveMasks() {
+        return whitePawnMoveMasks;
+    }
+
+    public static long[] getWhitePawnAttackMasks() {
+        return whitePawnAttackMasks;
+    }
+
+    public static long[] getBlackPawnMoveMasks() {
+        return blackPawnMoveMasks;
+    }
+
+    public static long[] getBlackPawnAttackMasks() {
+        return blackPawnAttackMasks;
+    }
+
+    public static long[] getQueenAttackMasks() {
+        return queenAttackMasks;
     }
 
     private long generateKingAttackMask(int square) {
@@ -156,23 +190,38 @@ public class MoveGenerationPrecompute {
 
         // Knight moves: 8 directions
         // Up moves (ranks increasing)
-        if ((bitBoard & (fileA | top2Ranks)) == 0) attackMask |= (bitBoard << 17); // up 2, left 1
-        if ((bitBoard & (fileAB | topRank)) == 0) attackMask |= (bitBoard << 10); // up 1, left 2
-        if ((bitBoard & (fileH | top2Ranks)) == 0) attackMask |= (bitBoard << 15); // up 2, right 1
-        if ((bitBoard & (fileGH | topRank)) == 0) attackMask |= (bitBoard << 6); // up 1, right 2
+        if ((bitBoard & (fileA | top2Ranks)) == 0) {
+            attackMask |= (bitBoard << 17); // up 2, left 1
+        }
+        if ((bitBoard & (fileAB | topRank)) == 0) {
+            attackMask |= (bitBoard << 10); // up 1, left 2
+        }
+        if ((bitBoard & (fileH | top2Ranks)) == 0) {
+            attackMask |= (bitBoard << 15); // up 2, right 1
+        }
+        if ((bitBoard & (fileGH | topRank)) == 0) {
+            attackMask |= (bitBoard << 6); // up 1, right 2
+        }
 
         // Down moves (ranks decreasing)
-        if ((bitBoard & (fileA | bottom2Ranks)) == 0) attackMask |= (bitBoard >>> 15); // down 2, left 1
-        if ((bitBoard & (fileAB | bottomRank)) == 0) attackMask |= (bitBoard >>> 6); // down 1, left 2
-        if ((bitBoard & (fileH | bottom2Ranks)) == 0) attackMask |= (bitBoard >>> 17); // down 2, right 1
-        if ((bitBoard & (fileGH | bottomRank)) == 0) attackMask |= (bitBoard >>> 10); // down 1, right 2
+        if ((bitBoard & (fileA | bottom2Ranks)) == 0) {
+            attackMask |= (bitBoard >>> 15); // down 2, left 1
+        }
+        if ((bitBoard & (fileAB | bottomRank)) == 0) {
+            attackMask |= (bitBoard >>> 6); // down 1, left 2
+        }
+        if ((bitBoard & (fileH | bottom2Ranks)) == 0) {
+            attackMask |= (bitBoard >>> 17); // down 2, right 1
+        }
+        if ((bitBoard & (fileGH | bottomRank)) == 0) {
+            attackMask |= (bitBoard >>> 10); // down 1, right 2
+        }
 
         return attackMask;
     }
 
     public long generateWhitePawnMoveMask(int square) {
         long bitBoard = startingBitBoards[square];
-        // TODO: implement promotion logic in getPossibleMoves
         if ((bitBoard & TOP_MASK) != 0) {
             return bitBoard; // if at the final row, promote, therefore no valid moves
         }
@@ -236,11 +285,10 @@ public class MoveGenerationPrecompute {
         return attackMask;
     }
 
-    // TODO: write tests
     public long generateBishopAttackMask(int square) {
         long attackMask = 0;
         for (int direction = 1; direction < 8; direction += 2) {
-            attackMask |= RAYS[direction][square];
+            attackMask |= rays[direction][square];
         }
 
         // remove edge for magic bitboard
@@ -248,7 +296,6 @@ public class MoveGenerationPrecompute {
         return attackMask;
     }
 
-    // TODO: write tests
     public long generateQueenAttackMask(int square) {
         return generateBishopAttackMask(square) | generateRookAttackMask(square);
     }
@@ -293,7 +340,9 @@ public class MoveGenerationPrecompute {
 
     // only pass in sliding pieces
     public static long getSlidingAttackWithBlockers(int pos, long blockers, int piece) {
-        if (!(1 <= piece && piece <= 3)) throw new RuntimeException("Invalid piece");
+        if (!(1 <= piece && piece <= 3)) {
+            throw new RuntimeException("Invalid piece");
+        }
         long slidingAttackMask = 0;
         // if isRook, only select even directions, else (bishop) odd
         boolean rankPiece = piece == 1 || piece == 2; // every sliding piece but bishop
@@ -302,7 +351,7 @@ public class MoveGenerationPrecompute {
             blockers ^= startingBitBoards[pos];
         }
         for (int direction = rankPiece ? 0 : 1; direction < 8; direction += (rankPiece && diagonalPiece ? 1 : 2)) {
-            long maskedBlocker = RAYS[direction][pos] & blockers; // find any piece in the way
+            long maskedBlocker = rays[direction][pos] & blockers; // find any piece in the way
             int closestBlockerPos;
             if (direction >= 4) { // if right or down direction
                 closestBlockerPos = getPosOfMostSigBit(maskedBlocker);
@@ -310,10 +359,10 @@ public class MoveGenerationPrecompute {
                 closestBlockerPos = getPosOfLeastSigBit(maskedBlocker);
             }
             if (closestBlockerPos == -1) { // no blocker in this direction
-                slidingAttackMask |= RAYS[direction][pos];
+                slidingAttackMask |= rays[direction][pos];
             } else {
-                long rayMask = RAYS[direction][closestBlockerPos];
-                slidingAttackMask |= RAYS[direction][pos] ^ rayMask;
+                long rayMask = rays[direction][closestBlockerPos];
+                slidingAttackMask |= rays[direction][pos] ^ rayMask;
                 // add blocker back to attack mask
                 // if friendly, will filter out in getPossibleLegalMoves
                 slidingAttackMask |= startingBitBoards[closestBlockerPos];
@@ -335,7 +384,7 @@ public class MoveGenerationPrecompute {
         return generateDenseLong() & generateDenseLong() & generateDenseLong();
     }
 
-    // Carry-Rippler
+    // carry-rippler
     private ArrayList<Long> getAllBlockerCombinations(int pos, int piece) {
         if (piece != 2 && piece != 3) throw new RuntimeException("Invalid piece");
         ArrayList<Long> blockerCombinations = new ArrayList<>();
@@ -377,7 +426,7 @@ public class MoveGenerationPrecompute {
                 foundMagic = true;
             }
         }
-        ROOK_ATTACK_TABLE[pos] = currMap;
+        rookAttackTable[pos] = currMap;
         return magic;
     }
 
@@ -385,7 +434,8 @@ public class MoveGenerationPrecompute {
     public void generateRookMagicBitBoards() {
         System.out.print("Generating Rook Magic Hash Precomputation Tables... ");
         for (int pos = 0; pos < 64; pos++) {
-            ROOK_MAGICS[pos] = findRookMagicNumber(pos, getAllBlockerCombinations(pos, 2));
+            rookMagics[pos] =
+                    findRookMagicNumber(pos, getAllBlockerCombinations(pos, 2));
         }
         System.out.println("Done!");
 
@@ -419,7 +469,7 @@ public class MoveGenerationPrecompute {
                 foundMagic = true;
             }
         }
-        BISHOP_ATTACK_TABLE[pos] = currMap;
+        bishopAttackTable[pos] = currMap;
         return magic;
     }
 
@@ -427,7 +477,7 @@ public class MoveGenerationPrecompute {
     public void generateBishopMagicBitBoards() {
         System.out.print("Generating Bishop Magic Hash Precomputation Tables... ");
         for (int pos = 0; pos < 64; pos++) {
-            BISHOP_MAGICS[pos] = findBishopMagicNumber(pos, getAllBlockerCombinations(pos, 3));
+            bishopMagics[pos] = findBishopMagicNumber(pos, getAllBlockerCombinations(pos, 3));
         }
         System.out.println("Done!");
     }
@@ -441,24 +491,26 @@ public class MoveGenerationPrecompute {
         switch (piece) {
             case 1: {// queen
                 long rookMaskedBlockers = blockers & rookAttackMasks[pos];
-                int rookIndex = magicHash(rookMaskedBlockers, Long.bitCount(rookAttackMasks[pos]), ROOK_MAGICS[pos]);
+                int rookIndex = magicHash(rookMaskedBlockers, Long.bitCount(rookAttackMasks[pos]), rookMagics[pos]);
                 long bishopMaskedBlockers = blockers & bishopAttackMasks[pos];
-                int bishopIndex = magicHash(bishopMaskedBlockers, Long.bitCount(bishopAttackMasks[pos]), BISHOP_MAGICS[pos]);
-                slidingAttackMask = ROOK_ATTACK_TABLE[pos][rookIndex] | BISHOP_ATTACK_TABLE[pos][bishopIndex];
+                int bishopIndex = magicHash(bishopMaskedBlockers, Long.bitCount(bishopAttackMasks[pos]), bishopMagics[pos]);
+                slidingAttackMask = rookAttackTable[pos][rookIndex] | bishopAttackTable[pos][bishopIndex];
                 break;
             }
             case 2: { // rook
                 long maskedBlockers = blockers & rookAttackMasks[pos];
-                int index = magicHash(maskedBlockers, Long.bitCount(rookAttackMasks[pos]), ROOK_MAGICS[pos]);
-                slidingAttackMask = ROOK_ATTACK_TABLE[pos][index];
+                int index = magicHash(maskedBlockers, Long.bitCount(rookAttackMasks[pos]), rookMagics[pos]);
+                slidingAttackMask = rookAttackTable[pos][index];
                 break;
             }
             case 3: {  // bishop
                 long maskedBlockers = blockers & bishopAttackMasks[pos];
-                int index = magicHash(maskedBlockers, Long.bitCount(bishopAttackMasks[pos]), BISHOP_MAGICS[pos]);
-                slidingAttackMask = BISHOP_ATTACK_TABLE[pos][index];
+                int index = magicHash(maskedBlockers, Long.bitCount(bishopAttackMasks[pos]), bishopMagics[pos]);
+                slidingAttackMask = bishopAttackTable[pos][index];
                 break;
             }
+            default:
+                throw new RuntimeException();
         }
         return slidingAttackMask;
     }

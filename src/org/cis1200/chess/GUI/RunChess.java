@@ -2,7 +2,6 @@ package org.cis1200.chess.GUI;
 
 import javax.swing.*;
 import java.awt.*;
-import org.cis1200.chess.engine.ChessBoard;
 
 public class RunChess implements Runnable {
     public void run() {
@@ -50,8 +49,10 @@ public class RunChess implements Runnable {
                             "8. To move a piece, click and drag it to the desired square. \n" +
                             "The goal is to checkmate your opponent’s King. \n\n" +
                             "Notable Features: \n" +
-                            "The Black pieces are controlled by an AI. I worked really hard on that :) \n" +
-                                    "I was able to do this by optimizing the chess move generation " +
+                            "The Black pieces are controlled by an AI. " +
+                            "I worked really hard on that :) \n" +
+                                    "I was able to do this by optimizing " +
+                            "the chess move generation " +
                                     "logic by using integer bit math instead of 2D arrays. \n" +
                                     "This means that all the pieces are stored as integers " +
                                     "and simply operated on to generate the moves. \n" +
