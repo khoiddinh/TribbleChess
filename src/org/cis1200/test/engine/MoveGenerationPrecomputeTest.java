@@ -144,7 +144,8 @@ public class MoveGenerationPrecomputeTest {
     @Test
     public void testMagicSlidingAttack() { // edge case max hash
         ChessBoard board = new ChessBoard();
-        long actual = tables.getSlidingMagicAttack(63, orBitBoardArray(board.whiteBitBoards) | orBitBoardArray(board.blackBitBoards), 2);
+        long actual = tables.getSlidingMagicAttack(63,
+                orBitBoardArray(board.whiteBitBoards) | orBitBoardArray(board.blackBitBoards), 2);
         long expected = 0b00000000_00000000_00000000_00000000_00000000_00000000_00000001_00000010;
         assertEquals(expected, actual);
     }

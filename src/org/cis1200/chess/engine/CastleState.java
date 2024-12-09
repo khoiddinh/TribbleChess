@@ -11,7 +11,8 @@ public class CastleState {
         blackCanRightCastle = true;
         blackCanLeftCastle = true;
     }
-    public CastleState(boolean whiteCanRightCastle, boolean whiteCanLeftCastle, boolean blackCanRightCastle, boolean blackCanLeftCastle) {
+    public CastleState(boolean whiteCanRightCastle, boolean whiteCanLeftCastle,
+                       boolean blackCanRightCastle, boolean blackCanLeftCastle) {
         this.whiteCanRightCastle = whiteCanRightCastle;
         this.whiteCanLeftCastle = whiteCanLeftCastle;
         this.blackCanRightCastle = blackCanRightCastle;

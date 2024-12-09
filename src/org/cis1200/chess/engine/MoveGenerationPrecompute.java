@@ -443,7 +443,8 @@ public class MoveGenerationPrecompute {
                 long rookMaskedBlockers = blockers & rookAttackMasks[pos];
                 int rookIndex = magicHash(rookMaskedBlockers, Long.bitCount(rookAttackMasks[pos]), ROOK_MAGICS[pos]);
                 long bishopMaskedBlockers = blockers & bishopAttackMasks[pos];
-                int bishopIndex = magicHash(bishopMaskedBlockers, Long.bitCount(bishopAttackMasks[pos]), BISHOP_MAGICS[pos]);
+                int bishopIndex = magicHash(bishopMaskedBlockers,
+                        Long.bitCount(bishopAttackMasks[pos]), BISHOP_MAGICS[pos]);
                 slidingAttackMask = ROOK_ATTACK_TABLE[pos][rookIndex] | BISHOP_ATTACK_TABLE[pos][bishopIndex];
                 break;
             }

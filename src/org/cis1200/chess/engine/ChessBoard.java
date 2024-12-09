@@ -213,7 +213,7 @@ public class ChessBoard {
                         if ((startingBitBoards[pos] & RIGHT_MASK) == 0) { // not on right side
                             potentialAttacks[piece] |= startingBitBoards[pos-7];
                         }
-                    } else if (!isWhiteTurn && (((startingBitBoards[pos] & BOTTOM_MASK) == 0))) {                         // not on bottom row;
+                    } else if (!isWhiteTurn && (((startingBitBoards[pos] & BOTTOM_MASK) == 0))) { // not on bottom row;
                         if (((startingBitBoards[pos] & LEFT_MASK) == 0)) { // not on left side
                             potentialAttacks[piece] |= startingBitBoards[pos + 7];
                         }
@@ -396,7 +396,7 @@ public class ChessBoard {
                     boolean isPromotion = false;
                     if (piece == 5) {
                         if (isWhiteTurn && ((startingBitBoards[targetPos] & TOP_MASK) != 0)) { // white promotion
-                            for (int promotionPiece = 1; promotionPiece < 4; promotionPiece++) { // queen added by default
+                            for (int promotionPiece = 2; promotionPiece < 4; promotionPiece++) { // queen add by default
                                 possibleMoves.add(
                                         new Move(pos, targetPos, piece,
                                         isCaptureMove, capturedPiece,
@@ -407,8 +407,9 @@ public class ChessBoard {
                             }
                             isPromotion = true;
                         }
-                        else if (!isWhiteTurn && ((startingBitBoards[targetPos] & BOTTOM_MASK) != 0)) { // black promotion
-                            for (int promotionPiece = 1; promotionPiece < 4; promotionPiece++) { // queen added by default
+                        else if (!isWhiteTurn &&
+                                ((startingBitBoards[targetPos] & BOTTOM_MASK) != 0)) { // black promotion
+                            for (int promotionPiece = 2; promotionPiece < 4; promotionPiece++) { // queen add by default
                                 possibleMoves.add(
                                         new Move(pos, targetPos, piece,
                                         isCaptureMove, capturedPiece,
@@ -422,13 +423,14 @@ public class ChessBoard {
 
                     // king can't move into check functionality
                     if (!(piece == 0 && isSquareAttacked(targetPos, friendlyBitBoard, opposingBitBoard)) &&
-                            !(piece == 5 && isCaptureMove && ((Math.abs(targetPos-pos) % 8) == 0))) { // pawn can't capture on same column
+                            !(piece == 5 && isCaptureMove
+                                    && ((Math.abs(targetPos-pos) % 8) == 0))) { // pawn can't capture on same column
 
                         // if promotion, queen added by default, block above adds rest
                         possibleMoves.add(
                                 new Move(pos, targetPos, piece,
                                 isCaptureMove, capturedPiece,
-                                isPromotion, 0,
+                                isPromotion, 1,
                                 false, true,
                                 castleState.copy(), false)
                         );
@@ -542,7 +544,8 @@ public class ChessBoard {
         // add it back to the original place
         bitBoardList[move.piece] |= startingBitBoards[move.source];
         // if captured, add the enemy piece back to its spot
-        if (move.isCaptureMove && !move.isEnPassantMove) { // don't consider enPassant, handle replace below in the enPassant block
+        if (move.isCaptureMove
+                && !move.isEnPassantMove) { // don't consider enPassant, handle replace below in the enPassant block
             opponentBitBoardList[move.pieceCaptured] |= startingBitBoards[move.target];
         }
         // put the captured pawn back, already moved capturing pawn back

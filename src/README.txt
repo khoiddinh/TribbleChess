@@ -46,8 +46,7 @@ PennKey: _______
   are most likely not going to be relevant to the search since an ideal opponent would
   never pick that move. Due to using bitboards (64 bit signed integers) as my board representation
   as opposed to a 2D array, which reduces the amount of assembly instructions the code compiles to,
-  my AI is able to search an average of 400 thousand positions per second
-  (evaluates up to 4 million positions per move usually).
+  my AI is able to search an average of 400 thousand positions per second.
   I also applied a position and piece based heuristic which also depends on the stage of
   the game. For instance, it uses an MVV-LVA scoring algorithm to sort the moves to
   reduce the search space of the capture moves since it prioritizes captures by lower

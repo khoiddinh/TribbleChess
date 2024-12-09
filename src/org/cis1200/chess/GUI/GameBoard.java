@@ -85,20 +85,32 @@ public class GameBoard extends JPanel {
         // initialize PIECE_TO_IMAGE
         try {
             // white pieces
-            PIECE_TO_IMAGE.put('K', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wk.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('Q', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wq.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('R', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wr.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('B', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wb.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('N', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wn.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('P', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wp.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('K', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wk.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('Q', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wq.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('R', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wr.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('B', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wb.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('N', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wn.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('P', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wp.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
 
             // black pieces
-            PIECE_TO_IMAGE.put('k', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bk.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('q', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bq.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('r', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/br.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('b', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bb.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('n', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bn.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('p', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bp.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('k', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bk.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('q', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bq.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('r', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/br.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('b', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bb.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('n', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bn.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('p', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bp.png"))
+                    , SQUARE_LENGTH, SQUARE_LENGTH));
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -131,14 +143,16 @@ public class GameBoard extends JPanel {
 
                 SwingUtilities.invokeLater(() -> {
                     // if AI is playing get best move
-                    if (isAIPlayingBlack && !board.isWhiteTurn() && board.checkWinner(board.getLegalPossibleMoves()) == 0) {
+                    if (isAIPlayingBlack && !board.isWhiteTurn()
+                            && board.checkWinner(board.getLegalPossibleMoves()) == 0) {
                         long startTime = System.currentTimeMillis();
                         Move aiMove = aiEngine.getBestMove(board);
                         long endTime = System.currentTimeMillis();
                         board.makeMove(aiMove);
                         System.out.println("Nodes Searched: " + aiEngine.nodesSearched);
                         System.out.println("Time Searched (ms): " + (endTime-startTime));
-                        System.out.println("Nodes per Second: " + (((float) aiEngine.nodesSearched) / ((float) (endTime-startTime))) * 1000.0);
+                        System.out.println("Nodes per Second: " + (((float) aiEngine.nodesSearched)
+                                / ((float) (endTime-startTime))) * 1000.0);
                         System.out.println("Pruned: " + aiEngine.pruneAmount);
                         aiEngine.nodesSearched = 0;
                         // don't have to reset posSelected because I already did above
@@ -160,8 +174,10 @@ public class GameBoard extends JPanel {
 
                 char[][] boardState = board.getBoardArray();
                 if (boardState[row][col] != EMPTY_SQUARE && // only if non-empty
-                        (board.isWhiteTurn() && Character.isUpperCase(boardState[row][col])) // and if white turn and select white piece
-                        || (!board.isWhiteTurn() && !Character.isUpperCase(boardState[row][col]))) { // or if black turn and black piece
+                        (board.isWhiteTurn()
+                        && Character.isUpperCase(boardState[row][col])) // and if white turn and select white piece
+                        || (!board.isWhiteTurn()
+                        && !Character.isUpperCase(boardState[row][col]))) { // or if black turn and black piece
                     posSelected = pos;
                 }
             }

@@ -19,7 +19,22 @@ public class ChessEngine {
     private static final int ENDGAME_PHASE_THRESHOLD = 500;
     private static int MATERIAL_SCALING = 1;
 
-    //
+     int[] mvvLva = {
+             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+             0, 105, 205, 305, 405, 505, 605, 105, 205, 305, 405, 505, 605,
+             0, 104, 204, 304, 404, 504, 604, 104, 204, 304, 404, 504, 604,
+             0, 103, 203, 303, 403, 503, 603, 103, 203, 303, 403, 503, 603,
+             0, 102, 202, 302, 402, 502, 602, 102, 202, 302, 402, 502, 602,
+             0, 101, 201, 301, 401, 501, 601, 101, 201, 301, 401, 501, 601,
+             0, 100, 200, 300, 400, 500, 600, 100, 200, 300, 400, 500, 600,
+
+             0, 105, 205, 305, 405, 505, 605, 105, 205, 305, 405, 505, 605,
+             0, 104, 204, 304, 404, 504, 604, 104, 204, 304, 404, 504, 604,
+             0, 103, 203, 303, 403, 503, 603, 103, 203, 303, 403, 503, 603,
+             0, 102, 202, 302, 402, 502, 602, 102, 202, 302, 402, 502, 602,
+             0, 101, 201, 301, 401, 501, 601, 101, 201, 301, 401, 501, 601,
+             0, 100, 200, 300, 400, 500, 600, 100, 200, 300, 400, 500, 600
+     };
     private static final int[][] PIECE_SQUARE_TABLE = {
             {-30, -40, -40, -50, -50, -40, -40, -30, // king
                     -30, -37, -43, -49, -50, -39, -40, -30,
@@ -120,26 +135,6 @@ public class ChessEngine {
             -2,   5,   6,  -6,   0,   3,   4,  -4,
             0,   0,   0,   0,   0,   0,   0,   0}
     };
-    // Transposition table types
-    private static final int TT_EXACT = 0;
-    private static final int TT_ALPHA = 1;
-    private static final int TT_BETA  = 2;
-
-    // Transposition table entry
-    private static class TTEntry {
-        long key;
-        int depth;
-        int flag;
-        int score;
-        int bestMove;
-        TTEntry(long key, int depth, int flag, int score, int bestMove) {
-            this.key = key;
-            this.depth = depth;
-            this.flag = flag;
-            this.score = score;
-            this.bestMove = bestMove;
-        }
-    }
 
     private static final int[][] WHITE_MATERIAL_WEIGHTS = {
             {20001, 888, 488, 319, 308, 89}, // opening material
@@ -179,12 +174,28 @@ public class ChessEngine {
 
     // score move
     private int scoreMove(Move move, boolean isWhiteTurn) {
+        int moveScore = 0;
+        if (move.isCastleMove) {
+            moveScore += 20000;
+        }
+        if (move.isCaptureMove) {
+            if (isWhiteTurn) { // 5 -> 7,
+                moveScore += mvvLva[(6-move.piece)*13 + (12-move.pieceCaptured)];
+            } else {
+                moveScore += mvvLva[(12-move.piece)*13 + (6-move.piece)];
+            }
+
+            moveScore += 10000;
+        }
+        return moveScore;
+        /*
         int score = 0;
         if (move.isCastleMove) {
             score += 10000;
         }
 
         // captures via MVV-LVA
+
         if (move.isCaptureMove) {
             score += 50 * mvvLvaScore(move.piece, move.pieceCaptured);
             // white material weights about same as black, don't need to check
@@ -193,13 +204,14 @@ public class ChessEngine {
             }
 
         }
-
         if (isWhiteTurn) {
             score += 10 * PIECE_SQUARE_TABLE[move.piece][move.target];
         } else {
             score += 10 * PIECE_SQUARE_TABLE[move.piece][63-move.target];
         }
         return score;
+
+         */
     }
 
     // Sort moves using our improved heuristic
@@ -215,7 +227,7 @@ public class ChessEngine {
     // eval board: + nums good for white, - nums good for black
     private int evalBoard(ChessBoard board, boolean isWhiteToMove) {
         int pieceMaterialScore = getPieceMaterialScore(board);
-        int gamePhase = -1;
+        int gamePhase;
 
         if (pieceMaterialScore > OPENING_PHASE_THRESHOLD) {
             gamePhase = 0;
@@ -283,7 +295,8 @@ public class ChessEngine {
         ArrayList<Move> moves = board.getLegalPossibleMoves();
         int gameState = board.checkWinner(moves);
         if (gameState == 1) { // white win
-            return new AIEvaluation(null, isWhiteToMove ? MAX - depth : MIN + depth); // - depth b/c pick the fastest way to win
+            // incorporate depth b/c want to pick the fastest way to win
+            return new AIEvaluation(null, isWhiteToMove ? MAX - depth : MIN + depth);
         } else if (gameState == -1) { // black win
             return new AIEvaluation(null, isWhiteToMove ? MIN + depth : MAX - depth);
         } else if (gameState == 2) { // draw
