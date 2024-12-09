@@ -66,7 +66,7 @@ public class GameBoard extends JPanel {
     private ArrayList<Move> possibleNextMoves; // to actually move
     private int posSelected;
 
-    private static final boolean isAIPlayingBlack = true;
+    private static final boolean isAIPlayingBlack = false;
     private static final ChessEngine2 aiEngine = new ChessEngine2();
     private ArrayList<Move> moveList;
     /**
@@ -131,12 +131,10 @@ public class GameBoard extends JPanel {
                 int moveIndex = getValidMoveIndex(posSelected, pos);
                 if (moveIndex != -1) {
                     board.makeMove(possibleNextMoves.get(moveIndex));
-                    System.out.println("MOVE: " + possibleNextMoves.get(moveIndex));
-                    System.out.println(board);
                     moveList.add(possibleNextMoves.get(moveIndex)); // TODO: DEBUG REMOVE
-                    System.out.println(moveList.toString());
                     possibleNextMoves = board.getLegalPossibleMoves();
                     possibleNextMovePairs = board.getMovePairs();
+                    System.out.println("Moves: " + possibleNextMoves);
                     System.out.println(Arrays.deepToString(possibleNextMovePairs));
                     boardState = board.getBoardArray();
                     posSelected = -1;

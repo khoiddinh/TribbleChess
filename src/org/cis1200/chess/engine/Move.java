@@ -30,4 +30,20 @@ public class Move {
         this.isEnPassantMove = isEnPassantMove;
     }
 
+    @Override
+    public String toString() {
+        String returnString = "{";
+        returnString += source + ", ";
+        returnString += target + ", ";
+        returnString += piece + ", ";
+        returnString += isCaptureMove + ", ";
+        returnString += pieceCaptured + ", ";
+        returnString += isPromotionMove + ", ";
+        returnString += isCastleMove + ", ";
+        returnString += rightCastleDirection + ", ";
+        returnString += castleState + ", ";
+        returnString += isEnPassantMove + "}";
+        return returnString;
+    }
+
 }

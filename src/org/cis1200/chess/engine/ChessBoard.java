@@ -163,21 +163,21 @@ public class ChessBoard {
                 // returns both moves and attacks
                 // does not handle enPassant (handled in getPossibleLegalMoves)
                 if (isWhiteTurn) {
-                    if ((whitePawnMoveMasks[pos] & opponentBitBoard) == 0) { // no overlap in opponent piece
+                    if ((whitePawnMoveMasks[pos] & blockerBitBoard) == 0) { // no overlap in opponent piece
                         // can double push potentially
                         moveMask = whitePawnMoveMasks[pos]; // only can go there if opponent not there
                     } else { // check single move
                         // get rid of any second row moves or if there is an opponent there do nothing
-                        moveMask = whitePawnMoveMasks[pos] & ~opponentBitBoard & ~(BOTTOM_SIDE_BOARD << 24);
+                        moveMask = whitePawnMoveMasks[pos] & ~blockerBitBoard & ~(BOTTOM_SIDE_BOARD << 24);
                     }
-                    moveMask |= (whitePawnAttackMasks[pos] & opponentBitBoard); // only can go there if takes
+                    moveMask |= (whitePawnAttackMasks[pos] & blockerBitBoard); // only can go there if takes
                 } else { // black pawn moves
-                    if ((blackPawnMoveMasks[pos] & opponentBitBoard) == 0) { // no overlap in opponent piece
+                    if ((blackPawnMoveMasks[pos] & blockerBitBoard) == 0) { // no overlap in opponent piece
                         // can double push potentially
                         moveMask = blackPawnMoveMasks[pos]; // only can go there if opponent not there
                     } else { // check single move
                         // get rid of any second row moves or if there is an opponent there do nothing
-                        moveMask = blackPawnMoveMasks[pos] & ~opponentBitBoard & ~(TOP_SIDE_BOARD >>> 24);
+                        moveMask = blackPawnMoveMasks[pos] & ~blockerBitBoard & ~(TOP_SIDE_BOARD >>> 24);
                     }
                     moveMask |= (blackPawnAttackMasks[pos] & opponentBitBoard);
                 }
@@ -450,17 +450,11 @@ public class ChessBoard {
     // TODO: UNIT TESTS
     public void makeMove(Move move) {
 
+
         long[] bitBoardList = isWhiteTurn ? whiteBitBoards : blackBitBoards;
         long[] opponentBitBoardList = isWhiteTurn ? blackBitBoards : whiteBitBoards;
         // remove piece at source location
-        try {
-            bitBoardList[move.piece] ^= startingBitBoards[move.source];
-        } catch (Exception e) {
-            System.out.println(move.source);
-            System.out.println(move.target);
-            System.out.println(move.piece);
-            throw new RuntimeException(e);
-        }
+        bitBoardList[move.piece] ^= startingBitBoards[move.source];
         // add at new target location
         bitBoardList[move.piece] |= startingBitBoards[move.target];
         // if capture move, update the capture bitboard in opponent bitboard
@@ -526,6 +520,7 @@ public class ChessBoard {
                     break;
             }
         }
+
         // add move to moveStack
         moveStack.add(move);
 
@@ -571,7 +566,7 @@ public class ChessBoard {
         }
         // fix the castle fields (regardless of if castle move
         // since could be rook or king move that changed it last move)
-        castleState = move.castleState;
+        castleState = move.castleState.copy();
     }
 
     public void reset() {

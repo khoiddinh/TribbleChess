@@ -19,6 +19,12 @@ public class CastleState {
     }
 
     public CastleState copy() {
-        return new CastleState(whiteCanRightCastle, whiteCanLeftCastle, whiteCanRightCastle, whiteCanLeftCastle);
+        return new CastleState(whiteCanRightCastle, whiteCanLeftCastle, blackCanRightCastle, blackCanLeftCastle);
+    }
+
+    @Override
+    public String toString() {
+        return "(" + whiteCanRightCastle + ", " + whiteCanLeftCastle + ", "
+                + blackCanRightCastle + ", " + blackCanLeftCastle + ")";
     }
 }
