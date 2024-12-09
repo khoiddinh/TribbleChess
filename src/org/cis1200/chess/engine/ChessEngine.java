@@ -17,6 +17,7 @@ public class ChessEngine {
 
     private static final int OPENING_PHASE_THRESHOLD = 5900;
     private static final int ENDGAME_PHASE_THRESHOLD = 500;
+    private static final int MATERIAL_SCALING = 1;
 
     private static final int[][] PIECE_SQUARE_TABLE = {
             {-30, -40, -40, -50, -50, -40, -40, -30, // king
@@ -56,9 +57,9 @@ public class ChessEngine {
                     -25, 5, 16, 12, 11, 6, 6, -29,
                     -24, 5, 21, 14, 18, 9, 11, -26,
                     -36, -5, 9, 23, 24, 21, 2, -24,
-                    -32, -1, 4, 19, 20, 4, 11, -25,
+                    -32, -1, 15, 19, 20, 15, 11, -25,
                     -38, -22, 4, -1, 8, -5, -18, -34,
-                    -50, -46, -32, -24, -36, -25, -34, -50},
+                    -50, -46, -32, -24, -36, -25, -46, -50},
             {0, 0, 0, 0, 0, 0, 0, 0, // pawn
             -4, 68, 61, 47, 47, 49, 45, -1,
             6, 16, 25, 33, 24, 24, 14, -6,
@@ -148,22 +149,24 @@ public class ChessEngine {
             {20000, 845, 501, 334, 318, 102} // endgame material
     };
     public ChessEngine() {
+        System.out.print("Initalizing AI...");
+        System.out.println(" Done!");
     }
 
     // game stage either 0 == opening, 1 = endgame (midGame is avg)
-    int getGamePhaseScore(ChessBoard board) {
-        int gamePhaseScore = 0;
+    int getPieceMaterialScore(ChessBoard board) {
+        int materialScore = 0;
 
         for (int piece = 1; piece <= 4; piece++) { // white
-            gamePhaseScore += Long.bitCount(board.whiteBitBoards[piece])
+            materialScore += Long.bitCount(board.whiteBitBoards[piece])
                     * WHITE_MATERIAL_WEIGHTS[0][piece];
         }
         for (int piece = 1; piece <= 4; piece++) { // black
-            gamePhaseScore += Long.bitCount(board.blackBitBoards[piece])
+            materialScore += Long.bitCount(board.blackBitBoards[piece])
                     * BLACK_MATERIAL_WEIGHTS[0][piece];
         }
 
-        return gamePhaseScore;
+        return materialScore;
     }
     // MVV-LVA scoring for captures
     // higher victimVal and lower attackerVal means a bigger score
@@ -174,7 +177,7 @@ public class ChessEngine {
     }
 
     // score move
-    private int scoreMove(Move move, int depth, boolean isWhiteTurn) {
+    private int scoreMove(Move move, boolean isWhiteTurn) {
         int score = 0;
         if (move.isCastleMove) {
             score += 10000;
@@ -183,8 +186,9 @@ public class ChessEngine {
         // captures via MVV-LVA
         if (move.isCaptureMove) {
             score += 50 * mvvLvaScore(move.piece, move.pieceCaptured);
+            // white material weights about same as black, don't need to check
             if (BLACK_MATERIAL_WEIGHTS[0][move.pieceCaptured] < BLACK_MATERIAL_WEIGHTS[0][move.piece]) {
-                score -= 20000;
+                score -= 100;  //score -= 20000; // make sure don't capture piece
             }
 
         }
@@ -198,29 +202,29 @@ public class ChessEngine {
     }
 
     // Sort moves using our improved heuristic
-    private void orderMoves(ArrayList<Move> moves, int depth, boolean isWhiteTurn) {
-        // precompute scores because scoreMove can be time consuming
+    private void orderMoves(ArrayList<Move> moves, boolean isWhiteTurn) {
+        // precompute scores because scoreMove can be time-consuming
         HashMap<Move, Integer> scores = new HashMap<>();
         for (Move m : moves) {
-            scores.put(m, scoreMove(m, depth, isWhiteTurn));
+            scores.put(m, scoreMove(m, isWhiteTurn));
         }
         moves.sort((a, b) -> Integer.compare(scores.get(b), scores.get(a)));
     }
 
     // eval board: + nums good for white, - nums good for black
     private int evalBoard(ChessBoard board, boolean isWhiteToMove) {
-        int gamePhaseScore = getGamePhaseScore(board);
+        int pieceMaterialScore = getPieceMaterialScore(board);
         int gamePhase = -1;
 
-        if (gamePhaseScore > OPENING_PHASE_THRESHOLD) {
+        if (pieceMaterialScore > OPENING_PHASE_THRESHOLD) {
             gamePhase = 0;
         }
-        else if (gamePhaseScore < ENDGAME_PHASE_THRESHOLD) {
+        else if (pieceMaterialScore < ENDGAME_PHASE_THRESHOLD) {
             gamePhase = 1; // endgame
         } else {
-            gamePhase = 2; // midgame
+            gamePhase = 2; // midGame
         }
-        int score = 0;
+        int score;
         int scoreOpening = 0;
         int scoreEndgame = 0;
 
@@ -229,8 +233,8 @@ public class ChessEngine {
             long pieceMask = board.whiteBitBoards[piece];
             while (pieceMask != 0) {
                 int pos = getPosOfLeastSigBit(pieceMask);
-                scoreOpening += WHITE_MATERIAL_WEIGHTS[0][piece];
-                scoreEndgame += WHITE_MATERIAL_WEIGHTS[1][piece];
+                scoreOpening += MATERIAL_SCALING * WHITE_MATERIAL_WEIGHTS[0][piece];
+                scoreEndgame += MATERIAL_SCALING * WHITE_MATERIAL_WEIGHTS[1][piece];
                 scoreOpening += PIECE_SQUARE_TABLE[piece][pos];
                 scoreEndgame += PIECE_SQUARE_TABLE_ENDGAME[piece][pos];
                 pieceMask ^= startingBitBoards[pos];
@@ -239,8 +243,8 @@ public class ChessEngine {
             pieceMask = board.blackBitBoards[piece];
             while (pieceMask != 0) {
                 int pos = getPosOfLeastSigBit(pieceMask);
-                scoreOpening -= BLACK_MATERIAL_WEIGHTS[0][piece];
-                scoreEndgame -= BLACK_MATERIAL_WEIGHTS[1][piece];
+                scoreOpening -= MATERIAL_SCALING * BLACK_MATERIAL_WEIGHTS[0][piece];
+                scoreEndgame -= MATERIAL_SCALING * BLACK_MATERIAL_WEIGHTS[1][piece];
 
                 scoreOpening -= PIECE_SQUARE_TABLE[piece][63-pos];
                 scoreEndgame -= PIECE_SQUARE_TABLE_ENDGAME[piece][63-pos];
@@ -250,16 +254,16 @@ public class ChessEngine {
         }
         if (gamePhase == 2) { // midgame
             score = (
-                    scoreOpening * gamePhaseScore +
-                            scoreEndgame * (OPENING_PHASE_THRESHOLD - gamePhaseScore)
+                    scoreOpening * pieceMaterialScore +
+                            scoreEndgame * (OPENING_PHASE_THRESHOLD - pieceMaterialScore)
             ) / OPENING_PHASE_THRESHOLD;
         }
         else if (gamePhase == 0) { // opening
             score = scoreOpening;
         } else { // endgame
-            score = scoreEndgame;
+            score = scoreOpening; //scoreEndgame;
         }
-        return board.isWhiteTurn() ? score : - score;
+        return isWhiteToMove ? score : - score;
 
     }
 
@@ -293,7 +297,7 @@ public class ChessEngine {
         }
 
         // order moves with heuristics
-        orderMoves(moves, depth, isWhiteToMove);
+        orderMoves(moves, isWhiteToMove);
 
         Move bestMove = null;
         int bestScore = MIN;

@@ -59,7 +59,7 @@ public class GameBoard extends JPanel {
     public static final Color LIGHT_SQUARE_COLOR = new Color(173,189,143);
     private int posSelected;
 
-    private static final boolean isAIPlayingBlack = true;
+    public boolean isAIPlayingBlack = true;
     private static final ChessEngine aiEngine = new ChessEngine();
 
     /**

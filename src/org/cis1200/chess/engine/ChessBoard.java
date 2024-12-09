@@ -12,7 +12,6 @@ import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfLeastSigBit;
 import static org.cis1200.chess.engine.BitBoardFunctions.orBitBoardArray;
 
 public class ChessBoard {
-
     // BIT BOARD CONSTANTS
     private static final long HEAD_INT = 0x8000000000000000L; // int that represents one at the 64th position
     private static final long LEFT_SIDE_BOARD = 0x8080808080808080L;

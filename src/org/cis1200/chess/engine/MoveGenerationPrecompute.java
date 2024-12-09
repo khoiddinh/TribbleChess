@@ -56,6 +56,7 @@ public class MoveGenerationPrecompute {
         for (int i = 0; i < 64; i++) {
             startingBitBoards[i] = 0x1L << 63-i;
         }
+        System.out.print("Generating Precomputation Tables... ");
         kingAttackMasks = new long[64];
         for (int i = 0; i < 64; i++) {
             kingAttackMasks[i] = generateKingAttackMask(i);
@@ -64,14 +65,17 @@ public class MoveGenerationPrecompute {
         for (int i = 0; i < 64; i++) {
             knightAttackMasks[i] = generateKnightAttackMask(i);
         }
+
         whitePawnAttackMasks = new long[64];
         for (int i = 0; i < 64; i++) {
             whitePawnAttackMasks[i] = generateWhitePawnAttackMask(i);
         }
+
         whitePawnMoveMasks = new long[64];
         for (int i = 0; i < 64; i++) {
             whitePawnMoveMasks[i] = generateWhitePawnMoveMask(i);
         }
+
         blackPawnAttackMasks = new long[64];
         for (int i = 0; i < 64; i++) {
             blackPawnAttackMasks[i] = generateBlackPawnAttackMask(i);
@@ -99,9 +103,11 @@ public class MoveGenerationPrecompute {
         }
         ROOK_MAGICS = new long[64];
         BISHOP_MAGICS = new long[64];
+        System.out.println("Done!");
 
         ROOK_ATTACK_TABLE = new long[64][]; // 64 * 2^12 (4096) (possible combos of blocker)
         BISHOP_ATTACK_TABLE = new long[64][]; // 64 * 2^9 (512)
+
         generateRookMagicBitBoards();
         generateBishopMagicBitBoards();
     }
@@ -358,7 +364,6 @@ public class MoveGenerationPrecompute {
             boolean magicIsInvalid = false;
             for (long blocker : blockerCombos) {
                 int index = magicHash(blocker, shiftAmount, magic);
-                //System.out.println(index);
                 long attackMask = getSlidingAttackWithBlockers(pos, blocker, 2);
                 // if already found an attack mask at index
                 if (currMap[index] != 0) {
@@ -377,24 +382,16 @@ public class MoveGenerationPrecompute {
         }
         ROOK_ATTACK_TABLE[pos] = currMap;
         return magic;
-        //while (magic not found)
-            // init / clear rook look up
-            // for all possible blocker combinations at pos
-                // key = magicHash(..)
-                // attackMask = getSlidingAttackMask(..)
-                // if key (index) already in lookup table, make sure
-                // that attackMask == table[key]
-                    // if improper collision, break and try new magic
-                // else add the key, attackMask pair
-
     }
 
     // inits it directly
     public void generateRookMagicBitBoards() {
+        System.out.print("Generating Rook Magic Hash Precomputation Tables... ");
         for (int pos = 0; pos < 64; pos++) {
-            System.out.println(pos);
             ROOK_MAGICS[pos] = findRookMagicNumber(pos, getAllBlockerCombinations(pos, 2));
         }
+        System.out.println("Done!");
+
     }
 
     private long findBishopMagicNumber(int pos, ArrayList<Long> blockerCombos) {
@@ -409,7 +406,6 @@ public class MoveGenerationPrecompute {
             boolean magicIsInvalid = false;
             for (long blocker : blockerCombos) {
                 int index = magicHash(blocker, shiftAmount, magic);
-                //System.out.println(index);
                 long attackMask = getSlidingAttackWithBlockers(pos, blocker, 3);
                 // if already found an attack mask at index
                 if (currMap[index] != 0) {
@@ -432,9 +428,11 @@ public class MoveGenerationPrecompute {
 
     // inits it directly
     public void generateBishopMagicBitBoards() {
+        System.out.print("Generating Bishop Magic Hash Precomputation Tables... ");
         for (int pos = 0; pos < 64; pos++) {
             BISHOP_MAGICS[pos] = findBishopMagicNumber(pos, getAllBlockerCombinations(pos, 3));
         }
+        System.out.println("Done!");
     }
     private int magicHash(long blockers, int shift, long magic){
         return (int) ((blockers * magic) >>> (64-shift));

@@ -5,6 +5,8 @@ import org.cis1200.chess.engine.MoveGenerationPrecompute;
 import org.junit.jupiter.api.Test;
 
 import static org.cis1200.chess.engine.BitBoardFunctions.orBitBoardArray;
+import static org.cis1200.chess.engine.BitBoardFunctions.printBitBoard;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MoveGenerationPrecomputeTest {
@@ -13,25 +15,7 @@ public class MoveGenerationPrecomputeTest {
     public static final long TOP_MASK = 0xFF00000000000000L;
     public static final long BOTTOM_MASK = 0xFFL;
     MoveGenerationPrecompute tables = new MoveGenerationPrecompute();
-    public void printBitBoard(long val) {
-        String s = Long.toBinaryString(val);
-        StringBuilder r = new StringBuilder();
-        r.append("0".repeat(64 - s.length()));
-        for (int i = 0; i < s.length(); i++) {
-            r.append(s.charAt(i));
-        }
-        s = r.toString();
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < 64; i++) {
-            result.append(s.charAt(i));
-            if (((i + 1) % 8) == 0) {
-                result.append('\n');
-            }
-        }
-        System.out.println("-----");
-        System.out.println(result);
-        System.out.println("-----");
-    }
+
     @Test
     void testGenerateRookAttackMask() {
         MoveGenerationPrecompute chessAttacks = new MoveGenerationPrecompute();
@@ -158,9 +142,10 @@ public class MoveGenerationPrecomputeTest {
     }
 
     @Test
-    public void testMagicSlidingAttack() {
+    public void testMagicSlidingAttack() { // edge case max hash
         ChessBoard board = new ChessBoard();
-        long result = tables.getSlidingMagicAttack(63, orBitBoardArray(board.whiteBitBoards) | orBitBoardArray(board.blackBitBoards), 2);
-        printBitBoard(result);
+        long actual = tables.getSlidingMagicAttack(63, orBitBoardArray(board.whiteBitBoards) | orBitBoardArray(board.blackBitBoards), 2);
+        long expected = 0b00000000_00000000_00000000_00000000_00000000_00000000_00000001_00000010;
+        assertEquals(expected, actual);
     }
 }
