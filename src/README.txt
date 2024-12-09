@@ -40,11 +40,11 @@ PennKey: _______
   Finally, enPassant is implemented correctly by checking the move stack to
   ensure that the previous move allows for an enPassant during the current turn.
 
-  4. AI:
+  4. Recursion:
   My AI uses negamax, which is a variation of minimax in order to run DFS and check
   all positions to a certain depth. It also alpha-beta pruning, which removes moves which
   are most likely not going to be relevant to the search since an ideal opponent would
-  never pick that move. Due to using bitboards (64 bit signed integers) as my board representation
+  never pick that move. Due to using bitboards (64-bit signed integers) as my board representation
   as opposed to a 2D array, which reduces the amount of assembly instructions the code compiles to,
   my AI is able to search an average of 400 thousand positions per second
   (evaluates up to 4 million positions per move usually).
