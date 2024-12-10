@@ -240,8 +240,12 @@ public class MoveGenerationPrecompute {
 
         }
         long mask = 0;
-        if ((bitBoard & LEFT_MASK) == 0) mask |= bitBoard << 9; // if not on left edge
-        if ((bitBoard & RIGHT_MASK) == 0) mask |= bitBoard << 7; // if not on right edge
+        if ((bitBoard & LEFT_MASK) == 0) {
+            mask |= bitBoard << 9; // if not on left edge
+        }
+        if ((bitBoard & RIGHT_MASK) == 0) {
+            mask |= bitBoard << 7; // if not on right edge
+        }
         return mask;
     }
 
@@ -264,8 +268,12 @@ public class MoveGenerationPrecompute {
             return bitBoard; // if at final row, promote, no valid moves
         }
         long mask = 0;
-        if ((bitBoard & LEFT_MASK) == 0) mask |= bitBoard >>> 7; // if not on left edge
-        if ((bitBoard & RIGHT_MASK) == 0) mask |= bitBoard >>> 9; // if not on right edge
+        if ((bitBoard & LEFT_MASK) == 0) {
+            mask |= bitBoard >>> 7; // if not on left edge
+        }
+        if ((bitBoard & RIGHT_MASK) == 0) {
+            mask |= bitBoard >>> 9; // if not on right edge
+        }
         return mask;
     }
 
@@ -350,7 +358,8 @@ public class MoveGenerationPrecompute {
         if ((startingBitBoards[pos] & blockers) != 0) { // if the blocker includes piece
             blockers ^= startingBitBoards[pos];
         }
-        for (int direction = rankPiece ? 0 : 1; direction < 8; direction += (rankPiece && diagonalPiece ? 1 : 2)) {
+        for (int direction = rankPiece ? 0 : 1;
+             direction < 8; direction += (rankPiece && diagonalPiece ? 1 : 2)) {
             long maskedBlocker = rays[direction][pos] & blockers; // find any piece in the way
             int closestBlockerPos;
             if (direction >= 4) { // if right or down direction
@@ -386,7 +395,9 @@ public class MoveGenerationPrecompute {
 
     // carry-rippler
     private ArrayList<Long> getAllBlockerCombinations(int pos, int piece) {
-        if (piece != 2 && piece != 3) throw new RuntimeException("Invalid piece");
+        if (piece != 2 && piece != 3) {
+            throw new RuntimeException("Invalid piece");
+        }
         ArrayList<Long> blockerCombinations = new ArrayList<>();
         long subset = 0;
         long mask = (piece == 2) ?
@@ -475,37 +486,44 @@ public class MoveGenerationPrecompute {
 
     // inits it directly
     public void generateBishopMagicBitBoards() {
-        System.out.print("Generating Bishop Magic Hash Precomputation Tables... ");
+        System.out.print("Generating Bishop Magic " +
+                "Hash Precomputation Tables... ");
         for (int pos = 0; pos < 64; pos++) {
-            bishopMagics[pos] = findBishopMagicNumber(pos, getAllBlockerCombinations(pos, 3));
+            bishopMagics[pos] = findBishopMagicNumber(pos,
+                    getAllBlockerCombinations(pos, 3));
         }
         System.out.println("Done!");
     }
-    private int magicHash(long blockers, int shift, long magic){
-        return (int) ((blockers * magic) >>> (64-shift));
+    private int magicHash(long blockers, int shift, long magic) {
+        return (int) ((blockers * magic) >>> (64 - shift));
     }
 
     // takes in generic blockers, not masked ones for the row and col (or diagonal)
     public long getSlidingMagicAttack(int pos, long blockers, int piece) {
         long slidingAttackMask = 0;
         switch (piece) {
-            case 1: {// queen
+            case 1: { // queen
                 long rookMaskedBlockers = blockers & rookAttackMasks[pos];
-                int rookIndex = magicHash(rookMaskedBlockers, Long.bitCount(rookAttackMasks[pos]), rookMagics[pos]);
+                int rookIndex = magicHash(rookMaskedBlockers,
+                        Long.bitCount(rookAttackMasks[pos]), rookMagics[pos]);
                 long bishopMaskedBlockers = blockers & bishopAttackMasks[pos];
-                int bishopIndex = magicHash(bishopMaskedBlockers, Long.bitCount(bishopAttackMasks[pos]), bishopMagics[pos]);
-                slidingAttackMask = rookAttackTable[pos][rookIndex] | bishopAttackTable[pos][bishopIndex];
+                int bishopIndex = magicHash(bishopMaskedBlockers,
+                        Long.bitCount(bishopAttackMasks[pos]), bishopMagics[pos]);
+                slidingAttackMask = rookAttackTable[pos][rookIndex]
+                        | bishopAttackTable[pos][bishopIndex];
                 break;
             }
             case 2: { // rook
                 long maskedBlockers = blockers & rookAttackMasks[pos];
-                int index = magicHash(maskedBlockers, Long.bitCount(rookAttackMasks[pos]), rookMagics[pos]);
+                int index = magicHash(maskedBlockers,
+                        Long.bitCount(rookAttackMasks[pos]), rookMagics[pos]);
                 slidingAttackMask = rookAttackTable[pos][index];
                 break;
             }
             case 3: {  // bishop
                 long maskedBlockers = blockers & bishopAttackMasks[pos];
-                int index = magicHash(maskedBlockers, Long.bitCount(bishopAttackMasks[pos]), bishopMagics[pos]);
+                int index = magicHash(maskedBlockers,
+                        Long.bitCount(bishopAttackMasks[pos]), bishopMagics[pos]);
                 slidingAttackMask = bishopAttackTable[pos][index];
                 break;
             }

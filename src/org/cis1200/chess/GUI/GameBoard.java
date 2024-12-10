@@ -56,7 +56,7 @@ public class GameBoard extends JPanel {
     public static final String WHITE_TO_MOVE_STATUS = "White to move";
     public static final String BLACK_TO_MOVE_STATUS = "Black to move";
 
-    private static HashMap<Character, BufferedImage> PIECE_TO_IMAGE;
+    private static HashMap<Character, BufferedImage> pieceToImage;
 
     public static final Color COLORED_SQUARE_COLOR = new Color(111,143,114);
     public static final Color LIGHT_SQUARE_COLOR = new Color(173,189,143);
@@ -79,48 +79,48 @@ public class GameBoard extends JPanel {
         board = new ChessBoard(); // initializes model for the game
         status = statusInit; // initializes the status JLabel
 
-        PIECE_TO_IMAGE = new HashMap<>(); // init hash map
+        pieceToImage = new HashMap<>(); // init hash map
 
         posSelected = -1; // init variable
         // initialize PIECE_TO_IMAGE
         try {
             // white pieces
-            PIECE_TO_IMAGE.put('K', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('K', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/wk.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('Q', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('Q', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/wq.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('R', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('R', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/wr.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('B', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('B', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/wb.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('N', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('N', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/wn.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('P', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('P', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/wp.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
 
             // black pieces
-            PIECE_TO_IMAGE.put('k', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('k', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/bk.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('q', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('q', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/bq.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('r', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('r', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/br.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('b', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('b', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/bb.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('n', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('n', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/bn.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('p', scaleImage(ImageIO.read(new File(
+            pieceToImage.put('p', scaleImage(ImageIO.read(new File(
                     "org/cis1200/chess/GUI/assets/bp.png")),
                     SQUARE_LENGTH, SQUARE_LENGTH));
 
@@ -137,9 +137,9 @@ public class GameBoard extends JPanel {
             public void mouseReleased(MouseEvent e) {
                 Point p = e.getPoint();
                 int pos = getClickPos(p);
-                // System.out.println(posSelected);
-                // System.out.println(pos);
-                if (posSelected == -1) return; // short circuit
+                if (posSelected == -1) {
+                    return; // short circuit
+                }
                 int moveIndex = getValidMoveIndex(posSelected, pos);
                 if (moveIndex != -1) {
                     ArrayList<Move> possibleNextMoves = board.getLegalPossibleMoves();
@@ -154,14 +154,17 @@ public class GameBoard extends JPanel {
 
                 SwingUtilities.invokeLater(() -> {
                     // if AI is playing get best move
-                    if (isAIPlayingBlack && !board.isWhiteTurn() && board.checkWinner(board.getLegalPossibleMoves()) == 0) {
+                    if (isAIPlayingBlack && !board.isWhiteTurn()
+                            && board.checkWinner(board.getLegalPossibleMoves()) == 0) {
                         long startTime = System.currentTimeMillis();
                         Move aiMove = AI_ENGINE.getBestMove(board);
                         long endTime = System.currentTimeMillis();
                         board.makeMove(aiMove);
                         System.out.println("Nodes Searched: " + AI_ENGINE.getNodesSearched());
-                        System.out.println("Time Searched (ms): " + (endTime-startTime));
-                        System.out.println("Nodes per Second: " + (((float) AI_ENGINE.getNodesSearched()) / ((float) (endTime-startTime))) * 1000.0);
+                        System.out.println("Time Searched (ms): " + (endTime - startTime));
+                        System.out.println("Nodes per Second: " +
+                                (((float) AI_ENGINE.getNodesSearched())
+                                        / ((float) (endTime - startTime))) * 1000.0);
                         System.out.println("Pruned: " + AI_ENGINE.getPruneAmount());
                         AI_ENGINE.resetNodeSearchCount();
                         // don't have to reset posSelected because I already did above
@@ -183,24 +186,32 @@ public class GameBoard extends JPanel {
 
                 char[][] boardState = board.getBoardArray();
                 if (boardState[row][col] != EMPTY_SQUARE && // only if non-empty
-                        (board.isWhiteTurn() && Character.isUpperCase(boardState[row][col])) // and if white turn and select white piece
-                        || (!board.isWhiteTurn() && !Character.isUpperCase(boardState[row][col]))) { // or if black turn and black piece
+                        (board.isWhiteTurn()
+                                && Character.isUpperCase(boardState[row][col]))
+                        // and if white turn and select white piece
+                        || (!board.isWhiteTurn()
+                        && !Character.isUpperCase(boardState[row][col]))) {
+                    // or if black turn and black piece
                     posSelected = pos;
                 }
             }
         });
     }
-    private static BufferedImage scaleImage(BufferedImage originalImage, int width, int height) {
-        BufferedImage scaledImage = new BufferedImage(width, height, originalImage.getType());
+    private static BufferedImage scaleImage(BufferedImage originalImage,
+                                            int width, int height) {
+        BufferedImage scaledImage = new BufferedImage(width, height,
+                originalImage.getType());
         AffineTransform at = AffineTransform.getScaleInstance(
                 (double) width / originalImage.getWidth(),
                 (double) height / originalImage.getHeight()
         );
-        AffineTransformOp scaleOp = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+        AffineTransformOp scaleOp = new AffineTransformOp(at,
+                AffineTransformOp.TYPE_BILINEAR);
         return scaleOp.filter(originalImage, scaledImage);
     }
 
-    // takes in position of click and returns the pos of square clicked (top left index = 0)
+    // takes in position of click and returns the
+    // pos of square clicked (top left index = 0)
     private int getClickPos(Point p) {
         int x = p.x;
         int y = p.y;
@@ -312,9 +323,9 @@ public class GameBoard extends JPanel {
             for (int col = 0; col < 8; col++) {
                 char pieceAtPos = boardState[row][col];
 
-                if ((row+col) % 2 == 1) { // even row odd col OR odd row even col
+                if ((row + col) % 2 == 1) { // even row odd col OR odd row even col
                     g.setColor(COLORED_SQUARE_COLOR);
-                    g.fillRect( col * SQUARE_LENGTH, row * SQUARE_LENGTH,
+                    g.fillRect(col * SQUARE_LENGTH, row * SQUARE_LENGTH,
                             SQUARE_LENGTH, SQUARE_LENGTH);
                 } else {
                     g.setColor(LIGHT_SQUARE_COLOR);
@@ -322,7 +333,7 @@ public class GameBoard extends JPanel {
                             SQUARE_LENGTH, SQUARE_LENGTH);
                 }
                 if (pieceAtPos != EMPTY_SQUARE) { // if piece at pos, draw it
-                    g.drawImage(PIECE_TO_IMAGE.get(pieceAtPos),
+                    g.drawImage(pieceToImage.get(pieceAtPos),
                             col * SQUARE_LENGTH, row * SQUARE_LENGTH,null);
                 }
             }

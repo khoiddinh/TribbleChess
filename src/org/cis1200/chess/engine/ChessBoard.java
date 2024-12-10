@@ -429,7 +429,8 @@ public class ChessBoard {
                     }
 
                     // pawn promotion logic to add promotion flag along with non queen promotions
-                    // capture flag even in the case of promotion is already handled in the above block
+                    // capture flag even in the case of promotion
+                    // is already handled in the above block
                     boolean isPromotion = false;
                     if (piece == 5) {
                         if (isWhiteTurn
@@ -446,8 +447,7 @@ public class ChessBoard {
                                 );
                             }
                             isPromotion = true;
-                        }
-                        else if (!isWhiteTurn &&
+                        } else if (!isWhiteTurn &&
                                 ((getStartingBitBoards()[targetPos]
                                         & BOTTOM_MASK) != 0)) { // black promotion
                             for (int promotionPiece = 2;
@@ -512,11 +512,13 @@ public class ChessBoard {
         if (move.getIsEnPassantMove()) {
             // if white turn, enPassant pawn is below (+) if black, enPassant pawn is above
             opponentBitBoardList[5] ^=
-                    getStartingBitBoards()[isWhiteTurn ? move.getTarget() + 8 : move.getTarget() - 8];
+                    getStartingBitBoards()[isWhiteTurn ?
+                            move.getTarget() + 8 : move.getTarget() - 8];
         }
         // if promotion, replace the pawn (that we already moved) with the promoted piece
         if (move.getIsPromotionMove()) {
-            bitBoardList[move.getPiece()] ^= getStartingBitBoards()[move.getTarget()]; // remove pawn
+            bitBoardList[move.getPiece()] ^=
+                    getStartingBitBoards()[move.getTarget()]; // remove pawn
             bitBoardList[move.getPromotionPiece()]
                     |= getStartingBitBoards()[move.getTarget()]; // replace with promoted piece
         }
@@ -695,12 +697,14 @@ public class ChessBoard {
                 long bitboard = bitboards[i];
                 char symbol = symbols[i];
                 if ((bitboard & HEAD_INT) != 0) { // check if there is a piece at that position
-                    if (symbolAtPos != EMPTY_SQUARE) { // sanity check to make sure there aren't two pieces at same pos
+                    if (symbolAtPos != EMPTY_SQUARE) {
+                        // sanity check to make sure there aren't two pieces at same pos
                         throw new RuntimeException("Two Pieces found at the same square");
                     }
                     symbolAtPos = symbol;
                 }
-                bitboards[i] = bitboard << 1; // left shift bitboard regardless of if there is a piece
+                bitboards[i] = bitboard << 1;
+                // left shift bitboard regardless of if there is a piece
             }
             returnString.append(symbolAtPos);
             if ((piecePos + 1) % 8 == 0) { // append newline after every row
@@ -744,13 +748,15 @@ public class ChessBoard {
                 long bitboard = bitboards[i];
                 char symbol = symbols[i];
                 if ((bitboard & HEAD_INT) != 0) { // check if there is a piece at that position
-                    if (symbolAtPos != EMPTY_SQUARE) { // sanity check to make sure there aren't two pieces at same pos
+                    if (symbolAtPos != EMPTY_SQUARE) {
+                        // sanity check to make sure there aren't two pieces at same pos
                         throw new RuntimeException("Two Pieces found at the same square");
                     }
                     symbolAtPos = symbol;
 
                 }
-                bitboards[i] = bitboard << 1; // left shift bitboard regardless of if there is a piece
+                bitboards[i] = bitboard << 1;
+                // left shift bitboard regardless of if there is a piece
             }
 
             if (moveTargetsFromPos.contains(piecePos)) {

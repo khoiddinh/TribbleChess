@@ -1,5 +1,4 @@
 package org.cis1200.chess.engine;
-import org.cis1200.chess.engine.CastleState;
 
 public class Move {
     private int source;
