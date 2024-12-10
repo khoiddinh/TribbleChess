@@ -1,9 +1,9 @@
-package org.cis1200.chess.engine;
+package engine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import static org.cis1200.chess.engine.MoveGenerationPrecompute.*;
-import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfLeastSigBit;
+import static engine.MoveGenerationPrecompute.*;
+import static engine.BitBoardFunctions.getPosOfLeastSigBit;
 
 public class ChessEngine {
 

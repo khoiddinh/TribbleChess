@@ -1,10 +1,10 @@
-package org.cis1200.chess.engine;
+package engine;
 
 import java.util.ArrayList;
 import java.util.Random;
 
-import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfLeastSigBit;
-import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfMostSigBit;
+import static engine.BitBoardFunctions.getPosOfLeastSigBit;
+import static engine.BitBoardFunctions.getPosOfMostSigBit;
 
 public class MoveGenerationPrecompute {
 

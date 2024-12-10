@@ -1,10 +1,10 @@
-package org.cis1200.test.engine;
-import org.cis1200.chess.engine.CastleState;
-import org.cis1200.chess.engine.ChessBoard;
+package engine;
+import chess.engine.CastleState;
+import chess.engine.ChessBoard;
 
-import org.cis1200.chess.engine.Move;
+import chess.engine.Move;
 import org.junit.jupiter.api.*;
-import static org.cis1200.chess.engine.BitBoardFunctions.orBitBoardArray;
+import static chess.engine.BitBoardFunctions.orBitBoardArray;
 
 
 import static org.junit.jupiter.api.Assertions.*;

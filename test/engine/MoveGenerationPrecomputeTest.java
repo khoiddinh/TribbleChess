@@ -1,11 +1,11 @@
-package org.cis1200.test.engine;
+package engine;
 
-import org.cis1200.chess.engine.ChessBoard;
-import org.cis1200.chess.engine.MoveGenerationPrecompute;
+import chess.engine.ChessBoard;
+import chess.engine.MoveGenerationPrecompute;
 import org.junit.jupiter.api.Test;
 
-import static org.cis1200.chess.engine.BitBoardFunctions.orBitBoardArray;
-import static org.cis1200.chess.engine.BitBoardFunctions.printBitBoard;
+import static chess.engine.BitBoardFunctions.orBitBoardArray;
+import static chess.engine.BitBoardFunctions.printBitBoard;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

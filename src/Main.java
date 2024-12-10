@@ -1,4 +1,4 @@
-package org.cis1200;
+import GUI.RunChess;
 
 import javax.swing.*;
 
@@ -13,7 +13,7 @@ import javax.swing.*;
     still stores the bitboards so it can make the moves with the engine
 */
 
-public class Game {
+public class Main {
     /**
      * Main method run to start and run the game. Initializes the runnable game
      * class of your choosing and runs it. IMPORTANT: Do NOT delete! You MUST
@@ -21,7 +21,7 @@ public class Game {
      */
     public static void main(String[] args) {
         // Set the game you want to run here
-        Runnable game = new org.cis1200.chess.GUI.RunChess();
+        Runnable game = new RunChess();
 
         SwingUtilities.invokeLater(game);
     }

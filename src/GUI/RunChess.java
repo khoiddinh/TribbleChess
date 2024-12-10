@@ -1,8 +1,7 @@
-package org.cis1200.chess.GUI;
+package GUI;
 
 import javax.swing.*;
 import java.awt.*;
-import org.cis1200.chess.engine.ChessBoard;
 
 public class RunChess implements Runnable {
     public void run() {

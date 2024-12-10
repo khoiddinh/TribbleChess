@@ -1,15 +1,13 @@
-package org.cis1200.chess.engine;
+package engine;
 
-import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Stack;
 import java.util.ArrayList;
 
-import static org.cis1200.chess.engine.MoveGenerationPrecompute.*;
+import static engine.MoveGenerationPrecompute.*;
 
-import static org.cis1200.chess.engine.BitBoardFunctions.getPosOfLeastSigBit;
-import static org.cis1200.chess.engine.BitBoardFunctions.orBitBoardArray;
+import static engine.BitBoardFunctions.getPosOfLeastSigBit;
+import static engine.BitBoardFunctions.orBitBoardArray;
 
 public class ChessBoard {
     // BIT BOARD CONSTANTS

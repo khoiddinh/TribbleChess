@@ -1,4 +1,4 @@
-package org.cis1200.chess.engine;
+package engine;
 
 public class CastleState {
     public boolean whiteCanRightCastle;

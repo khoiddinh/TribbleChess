@@ -1,4 +1,4 @@
-package org.cis1200.chess.GUI;
+package GUI;
 
 /*
  * CIS 120 HW09 - TicTacToe Demo
@@ -6,8 +6,8 @@ package org.cis1200.chess.GUI;
  * Created by Bayley Tuch, Sabrina Green, and Nicolas Corona in Fall 2020.
  */
 
-import org.cis1200.chess.engine.ChessBoard;
-import org.cis1200.chess.engine.ChessEngine;
+import engine.ChessBoard;
+import engine.ChessEngine;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -23,9 +23,9 @@ import javax.swing.*;
 import java.awt.image.AffineTransformOp;
 import java.awt.geom.AffineTransform;
 
-import static org.cis1200.chess.engine.ChessBoard.EMPTY_SQUARE;
+import static engine.ChessBoard.EMPTY_SQUARE;
 
-import org.cis1200.chess.engine.Move;
+import engine.Move;
 /**
  * This class instantiates a TicTacToe object, which is the model for the game.
  * As the user clicks the game board, the model is updated. Whenever the model
@@ -85,20 +85,20 @@ public class GameBoard extends JPanel {
         // initialize PIECE_TO_IMAGE
         try {
             // white pieces
-            PIECE_TO_IMAGE.put('K', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wk.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('Q', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wq.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('R', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wr.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('B', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wb.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('N', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wn.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('P', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/wp.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('K', scaleImage(ImageIO.read(new File("GUI/assets/wk.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('Q', scaleImage(ImageIO.read(new File("GUI/assets/wq.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('R', scaleImage(ImageIO.read(new File("GUI/assets/wr.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('B', scaleImage(ImageIO.read(new File("GUI/assets/wb.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('N', scaleImage(ImageIO.read(new File("GUI/assets/wn.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('P', scaleImage(ImageIO.read(new File("GUI/assets/wp.png")), SQUARE_LENGTH, SQUARE_LENGTH));
 
             // black pieces
-            PIECE_TO_IMAGE.put('k', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bk.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('q', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bq.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('r', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/br.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('b', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bb.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('n', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bn.png")), SQUARE_LENGTH, SQUARE_LENGTH));
-            PIECE_TO_IMAGE.put('p', scaleImage(ImageIO.read(new File("org/cis1200/chess/GUI/assets/bp.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('k', scaleImage(ImageIO.read(new File("GUI/assets/bk.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('q', scaleImage(ImageIO.read(new File("GUI/assets/bq.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('r', scaleImage(ImageIO.read(new File("GUI/assets/br.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('b', scaleImage(ImageIO.read(new File("GUI/assets/bb.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('n', scaleImage(ImageIO.read(new File("GUI/assets/bn.png")), SQUARE_LENGTH, SQUARE_LENGTH));
+            PIECE_TO_IMAGE.put('p', scaleImage(ImageIO.read(new File("GUI/assets/bp.png")), SQUARE_LENGTH, SQUARE_LENGTH));
 
         } catch (IOException e) {
             throw new RuntimeException(e);
